@@ -1,0 +1,325 @@
+/* ===== Element Plus 复刻版 配置后台 · 自定义细节样式 ===== */
+
+/* ------- 顶部导航（水平菜单）选中带下划线 ------- */
+.top-nav-menu.el-menu--horizontal {
+  border-bottom: none !important;
+  height: 56px;
+}
+.top-nav-menu.el-menu--horizontal > .el-menu-item.is-active {
+  border-bottom: 2px solid var(--el-color-primary);
+  color: var(--el-color-primary);
+  background: transparent !important;
+  height: 56px;
+  line-height: 56px;
+}
+.top-nav-menu.el-menu--horizontal > .el-menu-item.is-active::before {
+  display: none; /* 顶栏不用左边框 */
+}
+.top-nav-menu.el-menu--horizontal > .el-menu-item {
+  height: 56px;
+  line-height: 56px;
+  border-bottom: 2px solid transparent;
+}
+
+/* ------- 侧边栏 ------- */
+.sider-logo-wrap {
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  height: 56px;
+  border-right: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f0f0f0;
+  flex-shrink: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.sider-logo-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #6a5cff 0%, #3ab0ff 60%, #29d6a8 100%);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.sider-logo-text {
+  margin-left: 10px;
+  line-height: 1.2;
+}
+.sider-logo-title {
+  font-weight: 700;
+  font-size: 15px;
+  background: linear-gradient(90deg, #6a5cff, #3ab0ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: 0.5px;
+}
+.sider-logo-sub {
+  font-size: 11px;
+  color: #8a8f98;
+  margin-top: 2px;
+}
+
+.biz-tag {
+  display: inline-block;
+  margin: 12px 16px 10px;
+  padding: 2px 10px;
+  border-radius: 10px;
+  background: #e6f0ff;
+  color: var(--el-color-primary);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 18px;
+}
+
+.sider-scroll {
+  overflow-y: auto;
+  height: calc(100vh - 56px);
+}
+
+/* 侧边栏菜单去掉默认右边框 */
+.sider-menu {
+  border-right: none !important;
+}
+
+/* ------- Tabs 页签栏 ------- */
+.tabs-bar {
+  background: #fff;
+  padding: 0 16px;
+  border-bottom: 1px solid #eef0f3;
+  position: sticky;
+  top: 56px;
+  z-index: 5;
+}
+
+/* 主页 tab：蓝底实心按钮样式 */
+.custom-home-tab .el-tabs__item {
+  background: var(--el-color-primary) !important;
+  color: #fff !important;
+  border: 1px solid var(--el-color-primary) !important;
+  border-radius: 4px !important;
+  margin: 8px 12px 0 0 !important;
+  height: 30px !important;
+  line-height: 28px !important;
+  padding: 0 14px !important;
+}
+.custom-home-tab.is-active {
+  background: var(--el-color-primary) !important;
+  color: #fff !important;
+}
+.custom-home-tab .el-tabs__item .el-icon {
+  color: #fff !important;
+}
+.custom-home-tab.is-active::after {
+  display: none !important; /* 主页 tab 不需要下划线 */
+}
+
+/* 业务 tab：激活带下划线 */
+.el-tabs__nav-wrap::after {
+  background-color: transparent;
+}
+.el-tabs__item {
+  font-size: 14px !important;
+  height: 42px !important;
+  line-height: 42px !important;
+}
+.el-tabs__item:not(.custom-home-tab).is-active {
+  color: var(--el-color-primary) !important;
+  font-weight: 500;
+  position: relative;
+}
+.el-tabs__item:not(.custom-home-tab).is-active::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: -1px;
+  height: 2px;
+  background: var(--el-color-primary);
+  border-radius: 2px 2px 0 0;
+}
+
+/* tab 关闭按钮 */
+.tab-close {
+  margin-left: 8px;
+  font-size: 12px;
+  color: #909399;
+  transition: color 0.2s;
+}
+.tab-close:hover {
+  color: var(--el-color-primary);
+}
+.custom-home-tab .tab-close {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* ------- 内容卡片 ------- */
+.content-card {
+  background: #fff;
+  border-radius: 4px;
+  padding: 20px 20px 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+/* ------- 筛选区 ------- */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: nowrap;
+}
+.filter-label {
+  display: inline-flex;
+  align-items: center;
+  color: #333;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.filter-label::before {
+  content: '';
+  display: inline-block;
+  width: 3px;
+  height: 14px;
+  background: var(--el-color-primary);
+  margin-right: 8px;
+  border-radius: 2px;
+}
+.filter-bar .filter-btn {
+  flex-shrink: 0;
+}
+.filter-spacer {
+  flex: 1 1 auto;
+}
+
+/* ------- 操作链接分隔线 ------- */
+.action-divider {
+  display: inline-block;
+  width: 1px;
+  height: 12px;
+  background: #e5e6eb;
+  margin: 0 8px;
+  vertical-align: middle;
+}
+.action-link {
+  color: var(--el-color-primary);
+  cursor: pointer;
+  user-select: none;
+}
+.action-link:hover {
+  text-decoration: underline;
+}
+
+/* ------- 分页区 ------- */
+.pagination-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0 4px;
+  flex-wrap: wrap;
+}
+.pagination-total {
+  color: #606266;
+}
+.jump-input :deep(.el-input__wrapper),
+.jump-input .el-input__wrapper {
+  width: 52px !important;
+}
+.jump-label {
+  color: #606266;
+}
+
+/* ------- 顶栏右侧按钮渐变 ------- */
+.env-prod {
+  background: linear-gradient(90deg, #52c41a, #1677ff) !important;
+  border: none !important;
+  color: #fff !important;
+  padding: 0 14px !important;
+  height: 32px !important;
+}
+.env-user {
+  background: linear-gradient(135deg, #6a5cff, #3ab0ff) !important;
+  border: none !important;
+  color: #fff !important;
+  padding: 0 14px !important;
+  height: 32px !important;
+}
+.top-icon-btn {
+  border: none !important;
+  background: transparent !important;
+  color: #606266;
+  padding: 4px 10px !important;
+}
+
+/* ------- 表格表头 ------- */
+.el-table th.el-table__cell {
+  background: #f0f3f7 !important;
+  color: #333;
+  font-weight: 500;
+}
+
+/* ------- 表单分区样式 ------- */
+.form-section {
+  margin-bottom: 28px;
+  padding: 16px 20px;
+  background: #fafcfe;
+  border: 1px solid #e6eef8;
+  border-radius: 4px;
+}
+.form-section-title {
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  color: #1f2329;
+  font-size: 15px;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed #e0e6ef;
+}
+.form-section-title::before {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 16px;
+  background: linear-gradient(180deg, #1677ff, #69b1ff);
+  margin-right: 10px;
+  border-radius: 2px;
+}
+.form-section-no-border {
+  padding: 0;
+  background: transparent;
+  border: none;
+}
+.form-section-no-border .form-section-title {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 14px;
+}
+.sub-desc {
+  color: #8a8f98;
+  font-size: 12px;
+  margin-left: 10px;
+  font-weight: 400;
+}
+
+/* 进度条展示表格 */
+.progress-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.progress-cell .el-progress {
+  flex: 1;
+  min-width: 120px;
+}
+.progress-text {
+  font-size: 12px;
+  color: #606266;
+  white-space: nowrap;
+}
