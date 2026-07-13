@@ -1,32 +1,144 @@
-# React + TypeScript + Vite
+# 真车主任务中心 · 配置管理后台
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+基于 **Vue 3 + TypeScript + Vite + Element Plus** 构建的任务中心配置后台，覆盖任务主数据、投放组编排、参与记录三条核心链路的管理能力。
 
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```
+npm install       # 安装依赖
+npm run dev       # 启动本地开发（Vite 5）
+npm run build     # 生产构建：vue-tsc -b + vite build
+npm run preview   # 本地预览构建产物
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+---
+
+## 一、任务配置管理页
+
+### 1.1 页面定位
+维护"任务"的**主数据（原子任务）**：是投放组挑选任务的"任务池"来源。只有 `配置状态=已发布 且 任务状态=有效` 的任务才能被任务投放组引用。
+
+### 1.2 筛选区
+| 筛选项 | 类型 | 可选值 / 说明 |
+|---|---|---|
+| 活动名称 | 文本输入（可清除，220px） | 模糊匹配 `activityName`（后端管理用，非前端展示） |
+| 任务状态 | 下拉（可清除，120px） | `全部 / 有效 valid / 无效 invalid` |
+| 查询 / 重置 | 按钮 | 点击"重置"后筛选值与分页全部还原为初始态 |
+| 新建任务配置 | 主按钮（右上） | 打开"任务配置"弹窗，模式为"新建" |
+
+### 1.3 列表字段
+| 列名 | 宽度 | 呈现形式 / 数据口径 |
+|---|---|---|
+| # | 60 | 序号（页内自增，从1开始） |
+| 任务ID | 180 | `taskId`，hover 显示完整内容 |
+| 活动名称 | 最小190 | `activityName`，hover 显示完整内容 |
+| 任务状态 | 90 | Element Tag：`有效` → `<Tag success>`；`无效` → `<Tag info>` |
+| 任务周期 | 130 | ① 一次性（`cycleType=once`）→ 文案"一次性"；② 冷却周期型（`cycleType=cycle`）→ 文案 `冷却周期 (N天)`，N=`cooldownDays` |
+| 任务目标 | 最小170 | 主文案"完单 N 单"（`targetOrderCount`）；若配置了司机指标（`hasDriverMetric=true`），换行用小字灰字追加 `+ 接完率/接单率/服务评分 ≥ 阈值%` |
+| 奖励类型 | 150 | 可多标签组合：`普通奖品 <Tag success>` + `现金 <Tag danger>` |
+| 创建时间 | 170 | `createTime`（字符串 `YYYY-MM-DD HH:mm:ss`） |
+| 操作 | 360，右固定 | `查看` → 弹窗只读模式；`编辑` → 弹窗可编辑；`日志` → 变更记录弹框 |
+
+### 1.4 分页
+左上角展示 "共 N 条"；Element Pagination，可切换页大小 `10 / 20 / 50 / 100`；支持"前往第 X 页"跳转。
+
+---
+
+## 二、任务投放组管理页
+
+### 2.1 页面定位
+把一个或多个"任务"打包为**投放组（Delivery Plan）**：在任务维度之外，额外负责 **配置状态（发布/下线）、优先级、投放有效期、投放人群、AB 实验、任务展示顺序/置顶**。运营通过投放组来控制对用户实际"看到哪些任务、以什么顺序看到"。
+
+### 2.2 筛选区
+| 筛选项 | 类型 | 可选值 / 说明 |
+|---|---|---|
+| 投放名称 | 文本输入（可清除，220px） | 模糊匹配 `deliveryName` |
+| 配置状态 | 下拉（可清除，140px） | `全部 / 待发布 pending / 已发布 published / 已下线 offline` |
+| 查询 / 重置 | 按钮 | 同上 |
+| 新建投放组 | 主按钮（右上） | 打开"投放组配置"弹窗，模式为"新建" |
+
+### 2.3 列表字段
+| 列名 | 宽度 | 呈现形式 / 数据口径 |
+|---|---|---|
+| # | 60 | 序号 |
+| 投放组ID | 200 | `deliveryPlanId` |
+| 投放名称 | 最小200 | `deliveryName` |
+| 配置状态 | 100 | Tag 色彩映射：`待发布 pending → <Tag warning>`；`已发布 published → <Tag success>`；`已下线 offline → <Tag info>` |
+| 投放组优先级 | 110 | `P + priority 数字`，`<Tag warning plain>`；**数字越小优先级越高** |
+| 关联任务数 | 100 | `tasks.length` 个，数字蓝色加粗 |
+| 投放有效期 | 最小220 | 长期有效 `validityType=longterm` → 文案"长期有效"；固定区间 `validityType=fixed` → 开始时间大字 + 下一行小字"至 结束时间" |
+| 创建时间 | 170 | `createTime` |
+| 操作 | 300，右固定 | **查看** / **编辑**（"已发布"状态下置灰不可点，需先下线再编辑）/ **发布\|下线**（动态切换按钮：pending 和 offline 态显示绿色"发布"；published 态显示红色"下线"；下线后再次发布仍为合法路径，即"重新发布"支持）/ **日志** |
+
+### 2.4 分页
+同任务配置管理：页大小 10/20/50/100 + 页码跳转。
+
+### 2.5 关键业务约束
+- **任务可选池**：投放组"关联任务"只能选择 `configStatus=published（已发布） 且 taskStatus=valid（有效）` 的任务；草稿/无效/已下线任务在任务选择弹层中不出现。
+- **生命周期**：`待发布 → 已发布 ↔ 已下线`，已下线的投放组可直接"重新发布"回到已发布状态，无需复制。
+
+---
+
+## 三、任务参与记录页
+
+### 3.1 页面定位
+面向**运营 & 数据 & 客服**：按 `mid（司机ID）` 维度，查看每一位用户在各投放组中的任务参与进度、状态、奖励领取情况；支持对奖励领取异常的单条记录进行"重试领取"。列表页**不展示奖励列**，奖励详情收敛到详情抽屉。
+
+### 3.2 筛选区（两行布局）
+**第一行**：
+| 筛选项 | 类型 | 可选值 / 说明 |
+|---|---|---|
+| mid | 文本（可清除，160px） | 精确匹配 `driverId` |
+| 投放组ID | 文本（可清除，170px） | 精确匹配 `deliveryPlanId` |
+| 任务ID | 文本（可清除，170px） | 精确匹配 `taskId` |
+| 用户任务状态 | 下拉（120px） | `全部 / 进行中 progress / 待领取 claimable / 已领取 claimed / 已失效 expired / 冷却中 cooldown`（共 5 态） |
+| 领取状态 | 下拉（130px） | `全部 / 未领取 unclaimed / 领取成功 success / 部分失败 partial / 领取失败 fail`（共 4 态） |
+
+**第二行**：`查询`（主按钮）/ `重置`（次按钮）。
+
+### 3.3 列表字段
+| 列名 | 宽度 | 呈现形式 / 数据口径 |
+|---|---|---|
+| # | 60 | 序号 |
+| mid | 120 | `driverId`（同行业司机ID，原"司机ID"已重命名） |
+| 投放组ID | 150 | `deliveryPlanId` |
+| 投放名称 | 最小180 | `deliveryName` |
+| 任务ID | 160 | `taskId` |
+| 参与记录ID | 190 | `participationId`，参与记录的主键 |
+| 任务标题 | 最小180 | 前端展示用的任务标题 |
+| 用户任务状态 | 100 | 5 态 Tag：`进行中 <Tag primary>` / `待领取 <Tag warning>` / `已领取 <Tag success>` / `已失效 <Tag info>` / `冷却中 <Tag info>` |
+| 完单进度 | 最小180 | 进度条 + `已完成/目标总数` 的文本；百分比≥100 时进度条绿色，未完成蓝色；进度条颜色由完成度动态决定 |
+| 司机指标 | 130 | 若 `hasDriverMetric=true`：一行展示"指标类型 当前值%"（达标绿、未达标红加粗）+ 下一行小字灰字"阈值 ≥ N%"；否则显示 `-` |
+| 领取状态 | 100 | 4 态 Tag：`未领取 <Tag info>` / `领取成功 <Tag success>` / `部分失败 <Tag warning>` / `领取失败 <Tag danger>` |
+| 操作 | 90，右固定 | **详情** → 打开右侧详情抽屉（列表页不再提供行级重试，重试功能已收敛至详情抽屉的每张发放失败奖励卡片后方） |
+
+### 3.4 分页
+同前两页：页大小 10/20/50/100 + 页码跳转。
+
+### 3.5 详情抽屉（Drawer，右侧拉出，580px 宽）
+标题：**任务参与记录详情**
+
+#### 3.5.1 基础信息（Descriptions，单列边框式）
+| Label | 说明 |
+|---|---|
+| mid | `driverId` |
+| 投放组ID / 名称 | `deliveryPlanId / deliveryName`，中间以浅灰斜杠分隔 |
+| 任务ID | `taskId` |
+| 参与记录ID | `participationId` |
+| 任务标题 | 任务面向前端的展示标题 |
+| 用户任务状态 | Tag 展示（与列表一致） |
+| 完单进度 | `N / 总数`（纯文本形式） |
+| 司机指标 | **条件渲染**（仅 `hasDriverMetric=true` 时显示）：当前值达标绿、未达标红 + `（阈值 ≥ N%）` |
+| 领取状态 | Tag 展示（与列表一致） |
+| 周期开始时间 | `cycleStartTime` |
+| 领取时间 | **条件渲染**（仅 `claimTime` 非空时显示） |
+
+#### 3.5.2 奖励信息（按奖励类型分卡片，支持组合展示）
+标题：**奖励信息**（蓝色竖线强调）；如果用户本记录配置的奖励类型为空，该区块隐藏。
+
+每张卡片独立呈现一种奖励的发放结果：
+
+| 奖励类型 | 卡片视觉 | 内容 |
+|---|---|---|
+| **现金奖励**（`rewardTypes` 含 `cash`） | 红边框 `#ffd6d1` + 浅红底 `#fff7f6`，圆角 8px | ① `<Tag danger>`「现金奖励」+ 右侧发放结果 `<Tag success/danger/info>`：发放结果 三态 `已发放 success / 发放失败 fail / 未发起 none`；② `奖励 Code：CASH_XXX`（取 `cashRewardCode`，缺省兜底）；③ **当发放结果=发放失败 fail 时，卡内右下角追加「🔄 重试现金发放」danger-plain 小按钮**，点击弹确认框后仅针对该现金奖励重发，并实时刷新整体领取状态 |
+| **普通奖品**（`rewardTypes` 含 `normal`） | 绿边框 `#c7e8b7` + 浅绿底 `#f6ffed`，圆角 8px | ① `<Tag success>`「普通奖品」+ 右侧发放结果同上；② `奖励 Code：PRIZE_XXX`（取 `prizeRewardCode`，缺省兜底）；③ **当发放结果=发放失败 fail 时，卡内右下角追加「🔄 重试奖品发放」success-plain 小按钮**，行为与现金奖励一致，仅针对普通奖品单种重发 |
+
+> 设计原则：奖励在列表页不可见，仅在详情页按类型拆分查看；**重试功能按奖励类型拆分到各自卡片后方**，确保在"领取失败/部分失败"场景下可以一眼定位是现金发放异常还是券包/奖品发放异常，精准重试，避免误触其他奖励。

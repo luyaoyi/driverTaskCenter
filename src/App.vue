@@ -578,11 +578,9 @@
                   >{{ claimStatusLabel(partRow(row).claimStatus) }}</el-tag>
                 </template>
               </el-table-column>
-              <el-table-column label="操作" width="130" fixed="right">
+              <el-table-column label="操作" width="90" fixed="right">
                 <template #default="{ row }">
                   <span class="action-link" @click="onViewPart(row)">详情</span>
-                  <span class="action-divider"></span>
-                  <span class="action-link" @click="onRetryClaim(row)">重试</span>
                 </template>
               </el-table-column>
             </el-table>
@@ -1189,6 +1187,14 @@
                 <span style="color:#8a8f98">奖励 Code：</span>
                 <code>{{ partRow(partDrawer.data).cashRewardCode || 'CASH_2026070001' }}</code>
               </div>
+              <div
+                v-if="partRow(partDrawer.data).cashResult === 'fail'"
+                style="margin-top:14px;display:flex;justify-content:flex-end"
+              >
+                <el-button size="small" type="danger" plain @click="onRetryIssueByType('cash')">
+                  <el-icon style="margin-right:4px"><Refresh /></el-icon>重试现金发放
+                </el-button>
+              </div>
             </div>
             <!-- 普通奖品卡片 -->
             <div
@@ -1207,6 +1213,14 @@
               <div style="font-size:13px;color:#595959">
                 <span style="color:#8a8f98">奖励 Code：</span>
                 <code>{{ partRow(partDrawer.data).prizeRewardCode || 'PRIZE_TASK_0001' }}</code>
+              </div>
+              <div
+                v-if="partRow(partDrawer.data).prizeResult === 'fail'"
+                style="margin-top:14px;display:flex;justify-content:flex-end"
+              >
+                <el-button size="small" type="success" plain @click="onRetryIssueByType('normal')">
+                  <el-icon style="margin-right:4px"><Refresh /></el-icon>重试奖品发放
+                </el-button>
               </div>
             </div>
           </div>
@@ -2471,26 +2485,35 @@ function onViewPart(row: unknown) {
   partDrawer.data = row
   partDrawer.visible = true
 }
-function onRetryClaim(row: unknown) {
-  const r = partRow(row)
-  if (r.claimStatus === 'unclaimed' || r.claimStatus === 'success') {
-    ElMessage.info('当前状态无需重试'); return
-  }
+/* 详情抽屉内：按奖励类型重试发放（仅对当前奖励卡的发放结果=fail时可见/可用） */
+function onRetryIssueByType(type: 'cash' | 'normal') {
+  if (!partDrawer.data) return
+  const r = partRow(partDrawer.data)
+  const cashNeeded = r.rewardTypes.includes('cash')
+  const prizeNeeded = r.rewardTypes.includes('normal')
+  const label = type === 'cash' ? '现金奖励' : '普通奖品'
+  const target = type === 'cash' ? 'cashResult' : 'prizeResult'
+  if (r[target] !== 'fail') { ElMessage.info(`${label} 当前状态无需重试`); return }
   ElMessageBox.confirm(
-    `对司机 ${r.driverId} 的参与记录 ${r.participationId} 重试领取？仅重试失败的奖励类型。`,
-    '重试领取', { type: 'warning' },
+    `对参与记录 ${r.participationId}（mid: ${r.driverId}）的「${label}」重新发起发放？`,
+    '重试发放', { type: 'warning' },
   )
     .then(() => {
-      let cashOk = r.cashResult !== 'fail'
-      let prizeOk = r.prizeResult !== 'fail'
-      if (r.cashResult === 'fail') { r.cashResult = 'success'; cashOk = true }
-      if (r.prizeResult === 'fail') { r.prizeResult = 'success'; prizeOk = true }
-      const cashNeeded = r.rewardTypes.includes('cash')
-      const prizeNeeded = r.rewardTypes.includes('normal')
-      if ((!cashNeeded || cashOk) && (!prizeNeeded || prizeOk)) {
-        r.claimStatus = 'success'
+      r[target] = 'success'
+      // 重新计算整体领取状态：cash/prize 都不再 fail（或根本无需）→ 成功；还有失败 → partial
+      const cashOk = !cashNeeded || r.cashResult !== 'fail'
+      const prizeOk = !prizeNeeded || r.prizeResult !== 'fail'
+      const cashPartial = cashNeeded && r.cashResult === 'success'
+      const prizePartial = prizeNeeded && r.prizeResult === 'success'
+      if (cashOk && prizeOk) {
+        // 全部必要项都 OK，且至少有一个达到 success → 整体领取成功
+        if ((cashNeeded && r.cashResult === 'success') || (prizeNeeded && r.prizeResult === 'success')) {
+          r.claimStatus = 'success'
+        }
+      } else if (cashPartial || prizePartial) {
+        r.claimStatus = 'partial'
       }
-      ElMessage.success('重试完成')
+      ElMessage.success(`${label} 重试发放完成`)
     })
     .catch(() => {})
 }
