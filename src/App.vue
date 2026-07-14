@@ -980,6 +980,33 @@
                 </el-select>
               </el-form-item>
             </template>
+            <el-form-item label="启用司机接单数量限制">
+              <el-switch v-model="dlForm.enableOrderLimit" />
+            </el-form-item>
+            <el-form-item v-if="dlForm.enableOrderLimit" label="最小接单数量" required>
+              <el-input-number
+                v-model="dlForm.minOrderCount"
+                :min="1"
+                :max="9999"
+                :step="1"
+                placeholder="司机接单数量需大于等于此值"
+                style="width:100%"
+              />
+              <span style="color:#8a8f98;font-size:12px;margin-left:8px">仅接单数量大于等于此值的司机可参与任务组</span>
+            </el-form-item>
+            <el-form-item label="启用有效权益卡限制">
+              <el-switch v-model="dlForm.enableBenefitCardLimit" />
+            </el-form-item>
+            <el-form-item v-if="dlForm.enableBenefitCardLimit" label="权益卡条件" required>
+              <el-select
+                v-model="dlForm.benefitCardCondition"
+                placeholder="选择权益卡条件"
+                style="width:100%"
+              >
+                <el-option label="存在有效权益卡" value="exists" />
+                <el-option label="不存在有效权益卡" value="not_exists" />
+              </el-select>
+            </el-form-item>
           </el-form>
         </div>
 
@@ -1298,6 +1325,10 @@ interface DlRow {
   enableAb: boolean
   abExpId: string
   abGroups: string[]
+  enableOrderLimit: boolean
+  minOrderCount: number
+  enableBenefitCardLimit: boolean
+  benefitCardCondition: 'exists' | 'not_exists'
   tasks: DlTaskItem[]
   createTime: string
 }
@@ -1915,6 +1946,10 @@ const dlTable = ref<DlRow[]>([
     enableAb: true,
     abExpId: 'AB2026SUMMER',
     abGroups: ['B1', 'B2'],
+    enableOrderLimit: true,
+    minOrderCount: 100,
+    enableBenefitCardLimit: true,
+    benefitCardCondition: 'exists',
     tasks: [
       { taskId: 'TASK202607090001', activityName: 'Q3高活跃司机完单激励-现金版', taskTitle: '本周完成30单，领现金奖励', targetOrderCount: 30, hasDriverMetric: true, metricType: 'finish_rate', metricThreshold: 75, displayOrder: 1, isTop: true },
       { taskId: 'TASK202607090006', activityName: '月度服务之星-评分达标奖励', taskTitle: '月度服务之星·评分达标赢好礼', targetOrderCount: 100, hasDriverMetric: true, metricType: 'service_score', metricThreshold: 95, displayOrder: 2, isTop: false },
@@ -1936,6 +1971,10 @@ const dlTable = ref<DlRow[]>([
     enableAb: false,
     abExpId: '',
     abGroups: [],
+    enableOrderLimit: false,
+    minOrderCount: 0,
+    enableBenefitCardLimit: true,
+    benefitCardCondition: 'not_exists',
     tasks: [
       { taskId: 'TASK202607090002', activityName: '新司机首月完单20单领券包', taskTitle: '新人首月完成20单，领取超值券包', targetOrderCount: 20, hasDriverMetric: false, metricType: 'finish_rate', metricThreshold: 0, displayOrder: 1, isTop: true },
       { taskId: 'TASK20260710007', activityName: '每日完单5单-基础任务', taskTitle: '每日完成5单领基础奖励', targetOrderCount: 5, hasDriverMetric: false, metricType: 'finish_rate', metricThreshold: 0, displayOrder: 2, isTop: false },
@@ -1956,6 +1995,10 @@ const dlTable = ref<DlRow[]>([
     enableAb: true,
     abExpId: 'AB2026CALLBACK',
     abGroups: ['B1'],
+    enableOrderLimit: true,
+    minOrderCount: 50,
+    enableBenefitCardLimit: false,
+    benefitCardCondition: 'exists',
     tasks: [
       { taskId: 'TASK202607090004', activityName: '召回司机专属-完单10单领现金20元', taskTitle: '回归专属：完成10单领20元现金', targetOrderCount: 10, hasDriverMetric: true, metricType: 'finish_rate', metricThreshold: 70, displayOrder: 1, isTop: true },
     ],
@@ -1975,6 +2018,10 @@ const dlTable = ref<DlRow[]>([
     enableAb: true,
     abExpId: 'AB2026LOWFINISH',
     abGroups: ['A', 'B1'],
+    enableOrderLimit: false,
+    minOrderCount: 0,
+    enableBenefitCardLimit: false,
+    benefitCardCondition: 'exists',
     tasks: [
       { taskId: 'TASK202607090003', activityName: '低完单率司机每日接单率提升任务', taskTitle: '每日完成15单 + 接单率≥60% 领双份奖励', targetOrderCount: 15, hasDriverMetric: true, metricType: 'accept_rate', metricThreshold: 60, displayOrder: 1, isTop: true },
       { taskId: 'TASK20260710007', activityName: '每日完单5单-基础任务', taskTitle: '每日完成5单领基础奖励', targetOrderCount: 5, hasDriverMetric: false, metricType: 'finish_rate', metricThreshold: 0, displayOrder: 2, isTop: false },
@@ -1995,6 +2042,10 @@ const dlTable = ref<DlRow[]>([
     enableAb: false,
     abExpId: '',
     abGroups: [],
+    enableOrderLimit: true,
+    minOrderCount: 200,
+    enableBenefitCardLimit: true,
+    benefitCardCondition: 'exists',
     tasks: [
       { taskId: 'TASK202607090005', activityName: '核心城市暑期司机冲刺任务', taskTitle: '暑期冲刺50单+接完率80%领大奖', targetOrderCount: 50, hasDriverMetric: true, metricType: 'finish_rate', metricThreshold: 80, displayOrder: 1, isTop: true },
       { taskId: 'TASK20260710007', activityName: '每日完单5单-基础任务', taskTitle: '每日完成5单领基础奖励', targetOrderCount: 5, hasDriverMetric: false, metricType: 'finish_rate', metricThreshold: 0, displayOrder: 2, isTop: false },
@@ -2015,6 +2066,10 @@ const dlTable = ref<DlRow[]>([
     enableAb: false,
     abExpId: '',
     abGroups: [],
+    enableOrderLimit: false,
+    minOrderCount: 0,
+    enableBenefitCardLimit: false,
+    benefitCardCondition: 'exists',
     tasks: [
       { taskId: 'TASK20260710008', activityName: '低活司机专项激活任务', taskTitle: '完成3单激活奖励', targetOrderCount: 3, hasDriverMetric: false, metricType: 'finish_rate', metricThreshold: 0, displayOrder: 1, isTop: true },
     ],
@@ -2051,6 +2106,10 @@ interface DlForm {
   enableAb: boolean
   abExpId: string
   abGroups: string[]
+  enableOrderLimit: boolean
+  minOrderCount: number
+  enableBenefitCardLimit: boolean
+  benefitCardCondition: 'exists' | 'not_exists'
   tasks: DlTaskItem[]
 }
 const dlForm = reactive<DlForm>({
@@ -2060,6 +2119,8 @@ const dlForm = reactive<DlForm>({
   priority: 50,
   enableCrowd: false, crowdCodes: [],
   enableAb: false, abExpId: '', abGroups: [],
+  enableOrderLimit: false, minOrderCount: 0,
+  enableBenefitCardLimit: false, benefitCardCondition: 'exists',
   tasks: [],
 })
 function resetDlForm() {
@@ -2069,6 +2130,8 @@ function resetDlForm() {
     priority: 50,
     enableCrowd: false, crowdCodes: [],
     enableAb: false, abExpId: '', abGroups: [],
+    enableOrderLimit: false, minOrderCount: 0,
+    enableBenefitCardLimit: false, benefitCardCondition: 'exists',
     tasks: [],
   } as DlForm)
   pickTaskIds.value = []
@@ -2085,6 +2148,10 @@ function fillDlFormFromRow(row: DlRow) {
     enableAb: row.enableAb,
     abExpId: row.abExpId,
     abGroups: [...row.abGroups],
+    enableOrderLimit: row.enableOrderLimit,
+    minOrderCount: row.minOrderCount,
+    enableBenefitCardLimit: row.enableBenefitCardLimit,
+    benefitCardCondition: row.benefitCardCondition,
     tasks: row.tasks.map((t) => ({ ...t })),
   } as DlForm)
   pickTaskIds.value = row.tasks.map((t) => t.taskId)
@@ -2146,6 +2213,10 @@ function makeDlRowFromForm(status: ConfigStatus): DlRow {
     enableAb: dlForm.enableAb,
     abExpId: dlForm.abExpId,
     abGroups: [...dlForm.abGroups],
+    enableOrderLimit: dlForm.enableOrderLimit,
+    minOrderCount: dlForm.minOrderCount,
+    enableBenefitCardLimit: dlForm.enableBenefitCardLimit,
+    benefitCardCondition: dlForm.benefitCardCondition,
     tasks: dlForm.tasks.map((t) => ({ ...t })),
     createTime: now.toISOString().slice(0, 19).replace('T', ' '),
   }
