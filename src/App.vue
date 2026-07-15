@@ -144,10 +144,6 @@
                 <el-icon><Setting /></el-icon>
                 <span>任务配置管理</span>
               </el-menu-item>
-              <el-menu-item index="task-delivery">
-                <el-icon><Promotion /></el-icon>
-                <span>任务投放组管理</span>
-              </el-menu-item>
               <el-menu-item index="task-data">
                 <el-icon><DataBoard /></el-icon>
                 <span>任务参与记录</span>
@@ -197,9 +193,6 @@
             <el-breadcrumb-item>真车主任务中心</el-breadcrumb-item>
             <el-breadcrumb-item v-if="activeTab === 'task-config'">
               <b style="color: #333">任务配置管理</b>
-            </el-breadcrumb-item>
-            <el-breadcrumb-item v-else-if="activeTab === 'task-delivery'">
-              <b style="color: #333">任务投放组管理</b>
             </el-breadcrumb-item>
             <el-breadcrumb-item v-else-if="activeTab === 'task-data'">
               <b style="color: #333">任务参与记录</b>
@@ -302,14 +295,10 @@
                 <template #default="{ row }">
                   <el-tag
                     v-if="taskCfgRow(row).rewardTypes.includes('normal')"
-                    type="success" effect="light" size="small"
-                    style="margin-right:4px">普通奖品</el-tag>
-                  <el-tag
-                    v-if="taskCfgRow(row).rewardTypes.includes('cash')"
-                    type="danger" effect="light" size="small">现金</el-tag>
+                    type="success" effect="light" size="small">普通奖品</el-tag>
                 </template>
               </el-table-column>
-              <el-table-column prop="createTime" label="创建时间" width="170" />
+              <el-table-column prop="createTime" label="更新时间" width="170" />
               <el-table-column label="操作" width="360" fixed="right">
                 <template #default="{ row }">
                   <span class="action-link" @click="onViewCfg(row)">查看</span>
@@ -346,142 +335,13 @@
             </div>
           </div>
 
-          <!-- ============ 页面 2：任务投放组管理 ============ -->
-          <div v-else-if="activeTab === 'task-delivery'" class="content-card">
-            <div class="filter-bar">
-              <span class="filter-label">投放名称</span>
-              <el-input
-                v-model="dlFilter.name"
-                placeholder="请输入投放名称"
-                clearable
-                style="width: 220px"
-              />
-              <span class="filter-label" style="margin-left: 8px">配置状态</span>
-              <el-select
-                v-model="dlFilter.configStatus"
-                placeholder="全部" clearable
-                style="width: 140px"
-              >
-                <el-option label="待发布" value="pending" />
-                <el-option label="已发布" value="published" />
-                <el-option label="已下线" value="offline" />
-              </el-select>
-
-              <el-button type="primary" class="filter-btn" @click="onDlSearch">
-                <el-icon style="margin-right: 4px"><Search /></el-icon>查询
-              </el-button>
-              <el-button class="filter-btn" @click="onDlReset">
-                <el-icon style="margin-right: 4px"><Refresh /></el-icon>重置
-              </el-button>
-              <div class="filter-spacer"></div>
-              <el-button type="primary" class="filter-btn" @click="onCreateDl">
-                <el-icon style="margin-right: 4px"><Plus /></el-icon>新建投放组
-              </el-button>
-            </div>
-
-            <el-table
-              :data="filteredDlTable"
-              stripe border size="default"
-              style="width: 100%; margin-bottom: 16px"
-              :row-class-name="tableRowClassName"
-            >
-              <el-table-column label="#" width="60" align="center">
-                <template #default="{ $index }">{{ $index + 1 }}</template>
-              </el-table-column>
-              <el-table-column
-                prop="deliveryPlanId" label="投放组ID" width="200" show-overflow-tooltip
-              />
-              <el-table-column
-                prop="deliveryName" label="投放名称" min-width="200" show-overflow-tooltip
-              />
-              <el-table-column label="配置状态" width="100" align="center">
-                <template #default="{ row }">
-                  <el-tag
-                    :type="cfgStatusTagType(dlRow(row).configStatus)"
-                    effect="light" size="small">
-                    {{ cfgStatusLabel(dlRow(row).configStatus) }}
-                  </el-tag>
-                </template>
-              </el-table-column>
-              <el-table-column label="投放组优先级" width="110" align="center">
-                <template #default="{ row }">
-                  <el-tag type="warning" effect="plain" size="small">
-                    P{{ dlRow(row).priority }}
-                  </el-tag>
-                </template>
-              </el-table-column>
-              <el-table-column label="关联任务数" width="100" align="center">
-                <template #default="{ row }">
-                  <b style="color:#1677ff">{{ dlRow(row).tasks.length }}</b> 个
-                </template>
-              </el-table-column>
-              <el-table-column label="投放有效期" min-width="220">
-                <template #default="{ row }">
-                  <span v-if="dlRow(row).validityType === 'longterm'">长期有效</span>
-                  <span v-else>
-                    {{ dlRow(row).validStartTime }}
-                    <div style="color:#8a8f98;font-size:12px">至 {{ dlRow(row).validEndTime }}</div>
-                  </span>
-                </template>
-              </el-table-column>
-              <el-table-column prop="createTime" label="创建时间" width="170" />
-              <el-table-column label="操作" width="300" fixed="right">
-                <template #default="{ row }">
-                  <span class="action-link" @click="onViewDl(row)">查看</span>
-                  <span class="action-divider"></span>
-                  <span
-                    class="action-link"
-                    :style="dlRowEditStyle(row)"
-                    @click="dlRowEditClick(row)"
-                  >编辑</span>
-                  <span class="action-divider"></span>
-                  <span
-                    v-if="dlRow(row).configStatus === 'pending' || dlRow(row).configStatus === 'offline'"
-                    class="action-link" style="color:#52c41a"
-                    @click="onPublishDl(row)">发布</span>
-                  <span
-                    v-else-if="dlRow(row).configStatus === 'published'"
-                    class="action-link" style="color:#f5222d"
-                    @click="onOfflineDl(row)">下线</span>
-                  <span class="action-divider"></span>
-                  <span class="action-link" @click="onLogDl(row)">日志</span>
-                </template>
-              </el-table-column>
-            </el-table>
-
-            <div class="pagination-row">
-              <span class="pagination-total">共 {{ filteredDlTable.length }} 条</span>
-              <el-pagination
-                v-model:current-page="dlPage.current"
-                v-model:page-size="dlPage.size"
-                :page-sizes="[10, 20, 50, 100]"
-                layout="prev, pager, next, sizes"
-                :total="filteredDlTable.length" small
-              />
-              <span class="jump-label">前往</span>
-              <el-input-number
-                v-model="dlPage.jump"
-                :min="1"
-                :max="Math.max(1, Math.ceil(filteredDlTable.length / dlPage.size))"
-                size="small" controls-position="right"
-                class="jump-input" style="width:72px"
-              />
-              <span class="jump-label">页</span>
-            </div>
-          </div>
-
-          <!-- ============ 页面 3：任务参与记录 ============ -->
+          <!-- ============ 页面 2：任务参与记录 ============ -->
           <div v-else-if="activeTab === 'task-data'" class="content-card">
             <div class="filter-bar">
               <span class="filter-label">mid</span>
               <el-input
                 v-model="dataFilter.driverId"
                 placeholder="mid" clearable style="width:160px"
-              />
-              <span class="filter-label" style="margin-left:8px">投放组ID</span>
-              <el-input
-                v-model="dataFilter.deliveryPlanId"
-                placeholder="deliveryPlanId" clearable style="width:170px"
               />
               <span class="filter-label" style="margin-left:8px">任务ID</span>
               <el-input
@@ -529,13 +389,10 @@
                 <template #default="{ $index }">{{ $index + 1 }}</template>
               </el-table-column>
               <el-table-column prop="driverId" label="mid" width="120" show-overflow-tooltip />
-              <el-table-column prop="deliveryPlanId" label="投放组ID" width="150" show-overflow-tooltip />
-              <el-table-column prop="deliveryName" label="投放名称" min-width="180" show-overflow-tooltip />
               <el-table-column prop="taskId" label="任务ID" width="160" show-overflow-tooltip />
               <el-table-column
                 prop="participationId" label="参与记录ID" width="190" show-overflow-tooltip
               />
-              <el-table-column prop="taskTitle" label="任务标题" min-width="180" show-overflow-tooltip />
               <el-table-column label="用户任务状态" width="100" align="center">
                 <template #default="{ row }">
                   <el-tag
@@ -554,20 +411,6 @@
                     />
                     <span class="progress-text">{{ partRow(row).completedOrderCount }}/{{ partRow(row).targetOrderCount }}</span>
                   </div>
-                </template>
-              </el-table-column>
-              <el-table-column label="司机指标" width="130" align="center">
-                <template #default="{ row }">
-                  <template v-if="partRow(row).hasDriverMetric">
-                    <span
-                      :style="{
-                        color: partRow(row).driverMetricValue >= partRow(row).metricThreshold ? '#52c41a' : '#f5222d',
-                        fontWeight: 500
-                      }"
-                    >{{ metricLabel(partRow(row).metricType) }} {{ partRow(row).driverMetricValue }}%</span>
-                    <div style="font-size:12px;color:#8a8f98">阈值 ≥{{ partRow(row).metricThreshold }}%</div>
-                  </template>
-                  <span v-else style="color:#c0c4cc">-</span>
                 </template>
               </el-table-column>
               <el-table-column label="领取状态" width="100" align="center">
@@ -690,7 +533,112 @@
           </el-form>
         </div>
 
-        <!-- 5.1.2 任务配置（保持） -->
+        <!-- 5.1.2 投放限制 -->
+        <div class="form-section">
+          <div class="form-section-title">
+            投放限制
+            <span class="sub-desc">按司机接单数量、会员卡、司机标签、先知人群、AB实验过滤投放命中</span>
+          </div>
+          <el-form
+            :model="cfgForm"
+            :disabled="cfgDialog.mode === 'view'"
+            label-width="160px" label-position="right"
+          >
+            <el-form-item label="启用司机接单数量限制">
+              <el-switch v-model="cfgForm.enableOrderLimit" />
+            </el-form-item>
+            <el-form-item v-if="cfgForm.enableOrderLimit" label="最小接单数量" required>
+              <el-input-number
+                v-model="cfgForm.minOrderCount"
+                :min="1"
+                :max="9999"
+                :step="1"
+                placeholder="司机接单数量需大于等于此值"
+                style="width:100%"
+              />
+              <span style="color:#8a8f98;font-size:12px;margin-left:8px">仅接单数量大于等于此值的司机可参与任务</span>
+            </el-form-item>
+            <el-form-item label="启用会员卡限制">
+              <el-switch v-model="cfgForm.enableMemberCardLimit" />
+            </el-form-item>
+            <el-form-item v-if="cfgForm.enableMemberCardLimit" label="会员卡条件" required>
+              <el-select
+                v-model="cfgForm.memberCardCondition"
+                placeholder="选择会员卡条件"
+                style="width:100%"
+              >
+                <el-option label="无赠送会员卡" value="no_gift" />
+                <el-option label="无购买会员卡" value="no_purchase" />
+                <el-option label="无赠送/购买会员卡" value="no_both" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="启用司机标签限制">
+              <el-switch v-model="cfgForm.enableDriverTags" />
+            </el-form-item>
+            <el-form-item v-if="cfgForm.enableDriverTags" label="司机标签" required>
+              <el-select
+                v-model="cfgForm.driverTags"
+                multiple
+                filterable
+                placeholder="选择司机标签（支持多选）"
+                style="width:100%"
+              >
+                <el-option label="工号司机" value="staff_driver" />
+                <el-option label="加盟司机" value="franchise_driver" />
+                <el-option label="新手司机" value="new_driver" />
+                <el-option label="高活跃司机" value="high_active" />
+                <el-option label="低活跃司机" value="low_active" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="启用先知人群限制">
+              <el-switch v-model="cfgForm.enableCrowdLimit" />
+            </el-form-item>
+            <el-form-item v-if="cfgForm.enableCrowdLimit" label="先知人群" required>
+              <el-select
+                v-model="cfgForm.crowdCodes"
+                multiple
+                filterable
+                placeholder="选择先知人群（支持多选）"
+                style="width:100%"
+              >
+                <el-option label="高活跃司机" value="high_active_driver" />
+                <el-option label="低活跃司机" value="low_active_driver" />
+                <el-option label="新注册司机" value="new_register_driver" />
+                <el-option label="回归司机" value="return_driver" />
+                <el-option label="高完单率司机" value="high_finish_rate" />
+                <el-option label="低完单率司机" value="low_finish_rate" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="启用AB实验限制">
+              <el-switch v-model="cfgForm.enableAbLimit" />
+            </el-form-item>
+            <template v-if="cfgForm.enableAbLimit">
+              <el-form-item label="AB实验ID" required>
+                <el-input
+                  v-model="cfgForm.abExpId"
+                  placeholder="输入AB实验ID"
+                  maxlength="64" show-word-limit
+                />
+              </el-form-item>
+              <el-form-item label="AB实验分组" required>
+                <el-select
+                  v-model="cfgForm.abGroups"
+                  multiple
+                  filterable
+                  placeholder="选择AB实验分组（支持多选）"
+                  style="width:100%"
+                >
+                  <el-option label="对照组（A组）" value="group_a" />
+                  <el-option label="实验组1（B组）" value="group_b" />
+                  <el-option label="实验组2（C组）" value="group_c" />
+                  <el-option label="实验组3（D组）" value="group_d" />
+                </el-select>
+              </el-form-item>
+            </template>
+          </el-form>
+        </div>
+
+        <!-- 5.1.3 任务配置（保持） -->
         <div class="form-section">
           <div class="form-section-title">
             任务配置
@@ -751,7 +699,7 @@
           </el-form>
         </div>
 
-        <!-- 5.1.3 奖励配置（保持） -->
+        <!-- 5.1.4 奖励配置（保持） -->
         <div class="form-section">
           <div class="form-section-title">
             奖励配置
@@ -765,7 +713,6 @@
             <el-form-item label="奖励类型" required>
               <el-checkbox-group v-model="cfgForm.rewardTypes">
                 <el-checkbox value="normal">普通奖品（营销平台领取工具）</el-checkbox>
-                <el-checkbox value="cash">现金奖励（营销平台返现金工具）</el-checkbox>
               </el-checkbox-group>
             </el-form-item>
             <el-form-item
@@ -777,19 +724,10 @@
                 placeholder="关联营销平台普通奖励领取 code"
               />
             </el-form-item>
-            <el-form-item
-              v-if="cfgForm.rewardTypes.includes('cash')"
-              label="返现金奖励code" required
-            >
-              <el-input
-                v-model="cfgForm.cashRewardCode"
-                placeholder="关联营销平台返现金奖励 code"
-              />
-            </el-form-item>
           </el-form>
         </div>
 
-        <!-- 5.1.4 前端样式配置（保持） -->
+        <!-- 5.1.5 前端样式配置（保持） -->
         <div class="form-section">
           <div class="form-section-title">
             前端样式配置
@@ -869,264 +807,6 @@
       </template>
     </el-dialog>
 
-    <!-- ========== 弹窗 2：任务投放组（新建/编辑/查看） ========== -->
-    <el-dialog
-      v-model="dlDialog.visible"
-      :title="dlDialogTitle"
-      width="960px"
-      :close-on-click-modal="false"
-      :destroy-on-close="true"
-      top="3vh"
-    >
-      <div v-if="dlDialog.visible" style="max-height: 78vh; overflow-y: auto; padding-right: 6px">
-        <!-- 5.2.1 基础信息 -->
-        <div class="form-section">
-          <div class="form-section-title">
-            基础信息
-            <span class="sub-desc">投放名称、有效期、任务投放组优先级</span>
-          </div>
-          <el-form
-            :model="dlForm"
-            :disabled="dlDialog.mode === 'view'"
-            label-width="160px" label-position="right"
-          >
-            <el-form-item label="投放名称" required>
-              <el-input
-                v-model="dlForm.deliveryName"
-                placeholder="用于后端呈现和配置识别"
-                maxlength="64" show-word-limit
-              />
-            </el-form-item>
-            <el-form-item label="投放有效期" required>
-              <el-radio-group v-model="dlForm.validityType">
-                <el-radio value="longterm">长期有效</el-radio>
-                <el-radio value="fixed">固定时间生效</el-radio>
-              </el-radio-group>
-            </el-form-item>
-            <template v-if="dlForm.validityType === 'fixed'">
-              <el-form-item label="投放开始时间" required>
-                <el-date-picker
-                  v-model="dlForm.validStartTime" type="datetime"
-                  placeholder="选择开始时间"
-                  style="width:240px"
-                  value-format="YYYY-MM-DD HH:mm:ss"
-                />
-              </el-form-item>
-              <el-form-item label="投放结束时间" required>
-                <el-date-picker
-                  v-model="dlForm.validEndTime" type="datetime"
-                  placeholder="选择结束时间"
-                  style="width:240px"
-                  value-format="YYYY-MM-DD HH:mm:ss"
-                />
-              </el-form-item>
-            </template>
-            <el-form-item label="任务投放组优先级" required>
-              <el-input-number
-                v-model="dlForm.priority"
-                :min="1" :max="999" controls-position="right"
-              />
-              <div style="color:#8a8f98;font-size:12px;margin-top:4px">
-                数字越大越优先；同一用户同时命中多个投放组时只进入优先级最高的一组
-              </div>
-            </el-form-item>
-          </el-form>
-        </div>
-
-        <!-- 5.2.2 投放管理（先知人群 & AB 实验） -->
-        <div class="form-section">
-          <div class="form-section-title">
-            投放限制
-            <span class="sub-desc">按先知人群 / AB 实验组精细过滤投放命中</span>
-          </div>
-          <el-form
-            :model="dlForm"
-            :disabled="dlDialog.mode === 'view'"
-            label-width="160px" label-position="right"
-          >
-            <el-form-item label="启用先知人群限制" required>
-              <el-switch v-model="dlForm.enableCrowd" />
-            </el-form-item>
-            <el-form-item v-if="dlForm.enableCrowd" label="先知人群" required>
-              <el-select
-                v-model="dlForm.crowdCodes" multiple filterable
-                placeholder="选择可命中任务投放组的先知人群"
-                style="width:100%"
-              >
-                <el-option label="真车主-高活跃司机组" value="CROWD_HIGH_ACTIVE" />
-                <el-option label="真车主-新司机组" value="CROWD_NEW_DRIVER" />
-                <el-option label="真车主-低完单率组" value="CROWD_LOW_FINISH" />
-                <el-option label="真车主-召回司机组" value="CROWD_CALLBACK" />
-                <el-option label="真车主-核心城市组" value="CROWD_CORE_CITY" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="启用 AB 实验限制" required>
-              <el-switch v-model="dlForm.enableAb" />
-            </el-form-item>
-            <template v-if="dlForm.enableAb">
-              <el-form-item label="AB 实验编号" required>
-                <el-input v-model="dlForm.abExpId" placeholder="例：AB2026070101" />
-              </el-form-item>
-              <el-form-item label="AB 实验组" required>
-                <el-select
-                  v-model="dlForm.abGroups" multiple filterable allow-create
-                  placeholder="可命中的实验组，支持多选和新建"
-                  style="width:100%"
-                >
-                  <el-option label="A组-对照组" value="A" />
-                  <el-option label="B1组-实验组1" value="B1" />
-                  <el-option label="B2组-实验组2" value="B2" />
-                  <el-option label="C组-灰度组" value="C" />
-                </el-select>
-              </el-form-item>
-            </template>
-            <el-form-item label="启用司机接单数量限制">
-              <el-switch v-model="dlForm.enableOrderLimit" />
-            </el-form-item>
-            <el-form-item v-if="dlForm.enableOrderLimit" label="最小接单数量" required>
-              <el-input-number
-                v-model="dlForm.minOrderCount"
-                :min="1"
-                :max="9999"
-                :step="1"
-                placeholder="司机接单数量需大于等于此值"
-                style="width:100%"
-              />
-              <span style="color:#8a8f98;font-size:12px;margin-left:8px">仅接单数量大于等于此值的司机可参与任务组</span>
-            </el-form-item>
-            <el-form-item label="启用有效权益卡限制">
-              <el-switch v-model="dlForm.enableBenefitCardLimit" />
-            </el-form-item>
-            <el-form-item v-if="dlForm.enableBenefitCardLimit" label="权益卡条件" required>
-              <el-select
-                v-model="dlForm.benefitCardCondition"
-                placeholder="选择权益卡条件"
-                style="width:100%"
-              >
-                <el-option label="存在有效权益卡" value="exists" />
-                <el-option label="不存在有效权益卡" value="not_exists" />
-              </el-select>
-            </el-form-item>
-          </el-form>
-        </div>
-
-        <!-- 5.2.3 任务管理（关联任务 + 展示顺序 + 置顶） -->
-        <div class="form-section">
-          <div class="form-section-title">
-            任务管理
-            <span class="sub-desc">关联任务、展示顺序（数字越小越靠前）与置顶配置</span>
-          </div>
-          <el-form
-            :model="dlForm"
-            :disabled="dlDialog.mode === 'view'"
-            label-width="160px" label-position="right"
-          >
-            <el-form-item label="关联任务" required>
-              <div style="width:100%">
-                <el-select
-                  v-model="pickTaskIds"
-                  multiple filterable collapse-tags collapse-tags-tooltip
-                  placeholder="选择已发布且任务状态有效的任务（可多选）"
-                  style="width:100%"
-                  :disabled="dlDialog.mode === 'view'"
-                  @change="onPickTaskIdsChange"
-                >
-                  <el-option
-                    v-for="opt in selectableTaskOptions"
-                    :key="opt.taskId"
-                    :value="opt.taskId"
-                    :label="opt.displayName"
-                  />
-                </el-select>
-                <div style="color:#8a8f98;font-size:12px;margin-top:6px">
-                  共 {{ selectableTaskOptions.length }} 个可关联任务（已发布 + 任务状态有效）；选入后可在下方表格调整展示顺序与置顶。
-                </div>
-              </div>
-            </el-form-item>
-          </el-form>
-
-          <div style="margin-top: 4px">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-              <span style="font-weight:500;color:#1f2329">已关联任务（共 {{ dlForm.tasks.length }} 个）</span>
-              <div style="color:#8a8f98;font-size:12px">
-                同一用户同时命中多个投放组时，仅进入优先级最高的一组；组内所有关联任务均可参与。
-              </div>
-            </div>
-            <el-table
-              :data="dlForm.tasks"
-              border size="small"
-              :row-class-name="tableRowClassName"
-              style="width:100%"
-              empty-text="请先在上方选择要关联的任务"
-            >
-              <el-table-column label="#" width="60" align="center">
-                <template #default="{ $index }">{{ $index + 1 }}</template>
-              </el-table-column>
-              <el-table-column label="任务ID" width="180">
-                <template #default="{ row }">{{ row.taskId }}</template>
-              </el-table-column>
-              <el-table-column label="活动名称 / 任务标题" min-width="220">
-                <template #default="{ row }">
-                  <div>{{ row.activityName }}</div>
-                  <div style="color:#8a8f98;font-size:12px">标题：{{ row.taskTitle }}</div>
-                </template>
-              </el-table-column>
-              <el-table-column label="任务目标简述" min-width="170">
-                <template #default="{ row }">
-                  <div>完单 {{ row.targetOrderCount }} 单</div>
-                  <div v-if="row.hasDriverMetric" style="color:#8a8f98;font-size:12px">
-                    并 {{ metricLabel(row.metricType) }} ≥ {{ row.metricThreshold }}%
-                  </div>
-                </template>
-              </el-table-column>
-              <el-table-column label="任务展示顺序" width="160" align="center">
-                <template #default="{ row }">
-                  <el-input-number
-                    v-model="row.displayOrder"
-                    :min="1" :max="999" :controls-position="'right'"
-                    size="small"
-                    :disabled="dlDialog.mode === 'view'"
-                  />
-                  <div style="color:#8a8f98;font-size:12px;margin-top:2px">数字越小越靠前</div>
-                </template>
-              </el-table-column>
-              <el-table-column label="是否置顶" width="100" align="center">
-                <template #default="{ row }">
-                  <el-switch
-                    v-model="row.isTop"
-                    :disabled="dlDialog.mode === 'view'"
-                  />
-                </template>
-              </el-table-column>
-              <el-table-column
-                v-if="dlDialog.mode !== 'view'"
-                label="操作" width="80" align="center"
-              >
-                <template #default="{ row, $index }">
-                  <span
-                    class="action-link" style="color:#f5222d"
-                    @click="onRemoveTaskFromDl(row, $index)"
-                  >移除</span>
-                </template>
-              </el-table-column>
-            </el-table>
-          </div>
-        </div>
-      </div>
-
-      <template #footer>
-        <el-button @click="dlDialog.visible = false">
-          {{ dlDialog.mode === 'view' ? '关闭' : '取消' }}
-        </el-button>
-        <template v-if="dlDialog.mode !== 'view'">
-          <el-button @click="onSaveDlDraft">保存草稿</el-button>
-          <el-button type="primary" @click="onSubmitDl">
-            {{ dlDialog.mode === 'create' ? '提交创建' : '提交修改' }}
-          </el-button>
-        </template>
-      </template>
-    </el-dialog>
-
     <!-- Drawer：任务参与记录详情 -->
     <el-drawer
       v-model="partDrawer.visible"
@@ -1137,11 +817,6 @@
         <el-descriptions :column="1" border size="default">
           <el-descriptions-item label="mid">
             {{ partRow(partDrawer.data).driverId }}
-          </el-descriptions-item>
-          <el-descriptions-item label="投放组ID / 名称">
-            {{ partRow(partDrawer.data).deliveryPlanId }}
-            <span style="color:#8a8f98"> / </span>
-            {{ partRow(partDrawer.data).deliveryName }}
           </el-descriptions-item>
           <el-descriptions-item label="任务ID">
             {{ partRow(partDrawer.data).taskId }}
@@ -1196,34 +871,6 @@
             奖励信息
           </div>
           <div style="display:flex;flex-direction:column;gap:12px">
-            <!-- 现金奖励卡片 -->
-            <div
-              v-if="partRow(partDrawer.data).rewardTypes.includes('cash')"
-              style="border:1px solid #ffd6d1;border-radius:8px;padding:16px 20px;background:#fff7f6">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-                <el-tag type="danger" effect="light">现金奖励</el-tag>
-                <el-tag
-                  :type="
-                    partRow(partDrawer.data).cashResult === 'success' ? 'success'
-                      : partRow(partDrawer.data).cashResult === 'fail' ? 'danger' : 'info'
-                  "
-                  size="small"
-                >发放结果：{{ issueLabel(partRow(partDrawer.data).cashResult) }}</el-tag>
-              </div>
-              <div style="font-size:13px;color:#595959">
-                <span style="color:#8a8f98">奖励 Code：</span>
-                <code>{{ partRow(partDrawer.data).cashRewardCode || 'CASH_2026070001' }}</code>
-              </div>
-              <div
-                v-if="partRow(partDrawer.data).cashResult === 'fail'"
-                style="margin-top:14px;display:flex;justify-content:flex-end"
-              >
-                <el-button size="small" type="danger" plain @click="onRetryIssueByType('cash')">
-                  <el-icon style="margin-right:4px"><Refresh /></el-icon>重试现金发放
-                </el-button>
-              </div>
-            </div>
-            <!-- 普通奖品卡片 -->
             <div
               v-if="partRow(partDrawer.data).rewardTypes.includes('normal')"
               style="border:1px solid #c7e8b7;border-radius:8px;padding:16px 20px;background:#f6ffed">
@@ -1245,7 +892,7 @@
                 v-if="partRow(partDrawer.data).prizeResult === 'fail'"
                 style="margin-top:14px;display:flex;justify-content:flex-end"
               >
-                <el-button size="small" type="success" plain @click="onRetryIssueByType('normal')">
+                <el-button size="small" type="success" plain @click="onRetryIssueByType()">
                   <el-icon style="margin-right:4px"><Refresh /></el-icon>重试奖品发放
                 </el-button>
               </div>
@@ -1279,6 +926,17 @@ interface TaskCfgRow {
   validityType: 'fixed' | 'longterm'
   validStartTime: string
   validEndTime: string
+  enableOrderLimit: boolean
+  minOrderCount: number
+  enableMemberCardLimit: boolean
+  memberCardCondition: 'no_gift' | 'no_purchase' | 'no_both'
+  enableDriverTags: boolean
+  driverTags: string[]
+  enableCrowdLimit: boolean
+  crowdCodes: string[]
+  enableAbLimit: boolean
+  abExpId: string
+  abGroups: string[]
   cycleType: CycleType
   cooldownDays: number
   taskType: 'finish_order'
@@ -1286,50 +944,14 @@ interface TaskCfgRow {
   hasDriverMetric: boolean
   metricType: MetricType
   metricThreshold: number
-  rewardTypes: ('normal' | 'cash')[]
+  rewardTypes: 'normal'[]
   normalRewardCode: string
-  cashRewardCode: string
   taskTitle: string
   taskSubtitle: string
   taskDesc: string
   rewardDesc: string
   taskIcon: string
   taskBadge: string
-  createTime: string
-}
-
-/* ------- 投放组 - 关联任务简表 ------- */
-interface DlTaskItem {
-  taskId: string
-  activityName: string
-  taskTitle: string
-  targetOrderCount: number
-  hasDriverMetric: boolean
-  metricType: MetricType
-  metricThreshold: number
-  displayOrder: number
-  isTop: boolean
-}
-type DlConfigStatus = ConfigStatus
-interface DlRow {
-  key: string
-  deliveryPlanId: string
-  deliveryName: string
-  configStatus: DlConfigStatus
-  priority: number
-  validityType: 'fixed' | 'longterm'
-  validStartTime: string
-  validEndTime: string
-  enableCrowd: boolean
-  crowdCodes: string[]
-  enableAb: boolean
-  abExpId: string
-  abGroups: string[]
-  enableOrderLimit: boolean
-  minOrderCount: number
-  enableBenefitCardLimit: boolean
-  benefitCardCondition: 'exists' | 'not_exists'
-  tasks: DlTaskItem[]
   createTime: string
 }
 
@@ -1340,8 +962,6 @@ type IssueResult = 'none' | 'success' | 'fail'
 interface PartRow {
   key: string
   driverId: string
-  deliveryPlanId: string
-  deliveryName: string
   deliveryTaskRelationId: string
   taskId: string
   participationId: string
@@ -1354,10 +974,8 @@ interface PartRow {
   metricThreshold: number
   driverMetricValue: number
   claimStatus: ClaimStatus
-  rewardTypes: ('normal' | 'cash')[]
-  cashResult: IssueResult
+  rewardTypes: 'normal'[]
   prizeResult: IssueResult
-  cashRewardCode?: string
   prizeRewardCode?: string
   cycleStartTime: string
   claimTime?: string
@@ -1373,7 +991,6 @@ const activeTab = ref('task-config')
 const tabs = ref<TabItem[]>([
   { key: 'home', label: '主页', closable: false },
   { key: 'task-config', label: '任务配置管理', closable: true },
-  { key: 'task-delivery', label: '任务投放组管理', closable: true },
   { key: 'task-data', label: '任务参与记录', closable: true },
 ])
 
@@ -1389,7 +1006,6 @@ function onMenuSelect(key: string) {
   activeMenu.value = key
   const knownMap: Record<string, string> = {
     'task-config': '任务配置管理',
-    'task-delivery': '任务投放组管理',
     'task-data': '任务参与记录',
   }
   if (!tabs.value.some((t) => t.key === key)) {
@@ -1399,12 +1015,6 @@ function onMenuSelect(key: string) {
 }
 
 /* ================ 通用 Label / Tag 类型 ================ */
-function cfgStatusLabel(s: ConfigStatus) {
-  return s === 'pending' ? '待发布' : s === 'published' ? '已发布' : '已下线'
-}
-function cfgStatusTagType(s: ConfigStatus) {
-  return s === 'pending' ? 'warning' : s === 'published' ? 'success' : 'info'
-}
 function metricLabel(m: MetricType) {
   return m === 'finish_rate' ? '接完率' : m === 'accept_rate' ? '接单率' : '服务评分'
 }
@@ -1441,30 +1051,28 @@ const cfgPage = reactive({ current: 1, size: 10, jump: 1 })
 /* 类型收口：Element Plus slot row 是 DefaultRow (object)，统一断言 */
 function taskCfgRow(row: unknown): TaskCfgRow { return row as TaskCfgRow }
 
-/* 构造可用作"任务配置选择池"的选项（配置状态=已发布 + 任务状态=有效） */
-function getValidTasks(): TaskCfgRow[] {
-  return cfgTable.value.filter(
-    (t) => t.configStatus === 'published' && t.taskStatus === 'valid'
-  )
-}
-
 const cfgTable = ref<TaskCfgRow[]>([
   {
     key: '1', taskId: 'TASK202607090001',
-    activityName: 'Q3高活跃司机完单激励-现金版',
+    activityName: 'Q3高活跃司机完单激励',
     taskStatus: 'valid',
     configStatus: 'published',
     validityType: 'fixed',
     validStartTime: '2026-07-01 00:00:00', validEndTime: '2026-09-30 23:59:59',
+    enableOrderLimit: true, minOrderCount: 100,
+    enableMemberCardLimit: false, memberCardCondition: 'no_both',
+    enableDriverTags: true, driverTags: ['high_active'],
+    enableCrowdLimit: true, crowdCodes: ['high_active_driver'],
+    enableAbLimit: false, abExpId: '', abGroups: [],
     cycleType: 'cycle', cooldownDays: 7,
     taskType: 'finish_order', targetOrderCount: 30,
     hasDriverMetric: true, metricType: 'finish_rate', metricThreshold: 75,
-    rewardTypes: ['cash'],
-    cashRewardCode: 'CASH_TASK_0001', normalRewardCode: '',
-    taskTitle: '本周完成30单，领现金奖励',
+    rewardTypes: ['normal'],
+    normalRewardCode: 'PRIZE_TASK_0001',
+    taskTitle: '本周完成30单，领取奖励',
     taskSubtitle: '接完率≥75%',
-    taskDesc: '每周累计完成30个订单且周内接完率≥75%即可领取现金奖励。',
-    rewardDesc: '满足条件可领取 18 元现金，24 小时内到账钱包。',
+    taskDesc: '每周累计完成30个订单且周内接完率≥75%即可领取奖励。',
+    rewardDesc: '满足条件可领取价值 18 元的券包奖励。',
     taskIcon: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=%E7%BA%A2%E8%89%B2%E7%8E%B0%E9%87%91%E7%BA%A2%E5%8C%85%E9%87%91%E5%B8%81%E5%9B%BE%E6%A0%87%20%E7%BD%91%E7%BA%A6%E8%BD%A6%E5%8F%B8%E6%9C%BA%E4%BB%BB%E5%8A%A1%E5%A5%96%E5%8A%B1%20%E7%AE%80%E7%BA%A6%E6%89%81%E5%B9%B3%E9%A3%8E%E6%A0%BC&image_size=square_hd',
     taskBadge: '限时冲刺',
     createTime: '2026-07-01 10:23:45',
@@ -1475,11 +1083,16 @@ const cfgTable = ref<TaskCfgRow[]>([
     taskStatus: 'valid',
     configStatus: 'published',
     validityType: 'longterm', validStartTime: '', validEndTime: '',
+    enableOrderLimit: false, minOrderCount: 0,
+    enableMemberCardLimit: true, memberCardCondition: 'no_both',
+    enableDriverTags: true, driverTags: ['new_driver'],
+    enableCrowdLimit: true, crowdCodes: ['new_register_driver'],
+    enableAbLimit: false, abExpId: '', abGroups: [],
     cycleType: 'once', cooldownDays: 0,
     taskType: 'finish_order', targetOrderCount: 20,
     hasDriverMetric: false, metricType: 'finish_rate', metricThreshold: 0,
     rewardTypes: ['normal'],
-    normalRewardCode: 'PRIZE_NEWDRIVER_002', cashRewardCode: '',
+    normalRewardCode: 'PRIZE_NEWDRIVER_002',
     taskTitle: '新人首月完成20单，领取超值券包',
     taskSubtitle: '',
     taskDesc: '新人首月累计完成20单即可领取券包。',
@@ -1495,35 +1108,45 @@ const cfgTable = ref<TaskCfgRow[]>([
     configStatus: 'published',
     validityType: 'fixed',
     validStartTime: '2026-07-15 00:00:00', validEndTime: '2026-10-15 23:59:59',
+    enableOrderLimit: false, minOrderCount: 0,
+    enableMemberCardLimit: false, memberCardCondition: 'no_both',
+    enableDriverTags: true, driverTags: ['low_active'],
+    enableCrowdLimit: true, crowdCodes: ['low_finish_rate'],
+    enableAbLimit: false, abExpId: '', abGroups: [],
     cycleType: 'cycle', cooldownDays: 1,
     taskType: 'finish_order', targetOrderCount: 15,
     hasDriverMetric: true, metricType: 'accept_rate', metricThreshold: 60,
-    rewardTypes: ['cash', 'normal'],
-    cashRewardCode: 'CASH_TASK_0003', normalRewardCode: 'PRIZE_TASK_0003',
-    taskTitle: '每日完成15单 + 接单率≥60% 领双份奖励',
-    taskSubtitle: '双奖励组合',
-    taskDesc: '每日完成15单并保持接单率≥60%可同时领取现金与券包。',
-    rewardDesc: '现金 10 元 + 5 元券包 1 份；现金次日到账，券包实时发放。',
+    rewardTypes: ['normal'],
+    normalRewardCode: 'PRIZE_TASK_0003',
+    taskTitle: '每日完成15单 + 接单率≥60% 领奖励',
+    taskSubtitle: '',
+    taskDesc: '每日完成15单并保持接单率≥60%可领取奖励。',
+    rewardDesc: '价值 15 元券包 1 份；券包实时发放。',
     taskIcon: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=%E7%BB%BF%E8%89%B2%E6%B1%BD%E8%BD%A6%E8%BD%A6%E9%80%9F%E8%A1%A8%E7%AE%AD%E5%A4%B4%E5%90%91%E4%B8%8A%20%E6%8E%A5%E5%8D%95%E7%8E%87%E6%8F%90%E5%8D%87%E5%9B%BE%E6%A0%87%20%E7%AE%80%E7%BA%A6%E6%89%81%E5%B9%B3%E7%99%BD%E5%BA%95&image_size=square_hd',
     taskBadge: '每日必做',
     createTime: '2026-07-08 09:40:11',
   },
   {
     key: '4', taskId: 'TASK202607090004',
-    activityName: '召回司机专属-完单10单领现金20元',
+    activityName: '召回司机专属-完单10单领奖励',
     taskStatus: 'valid',
     configStatus: 'pending',
     validityType: 'fixed',
     validStartTime: '2026-07-20 00:00:00', validEndTime: '2026-09-30 23:59:59',
+    enableOrderLimit: false, minOrderCount: 0,
+    enableMemberCardLimit: false, memberCardCondition: 'no_both',
+    enableDriverTags: false, driverTags: [],
+    enableCrowdLimit: true, crowdCodes: ['return_driver'],
+    enableAbLimit: false, abExpId: '', abGroups: [],
     cycleType: 'once', cooldownDays: 0,
     taskType: 'finish_order', targetOrderCount: 10,
     hasDriverMetric: true, metricType: 'finish_rate', metricThreshold: 70,
-    rewardTypes: ['cash'],
-    cashRewardCode: 'CASH_CALLBACK_004', normalRewardCode: '',
-    taskTitle: '回归专属：完成10单领20元现金',
+    rewardTypes: ['normal'],
+    normalRewardCode: 'PRIZE_CALLBACK_004',
+    taskTitle: '回归专属：完成10单领奖励',
     taskSubtitle: '接完率≥70%',
-    taskDesc: '召回司机专属，完成10单且接完率≥70%可领现金。',
-    rewardDesc: '20 元回归现金，仅限一次，领取后 48 小时内到账。',
+    taskDesc: '召回司机专属，完成10单且接完率≥70%可领奖励。',
+    rewardDesc: '价值 20 元的券包奖励，仅限一次。',
     taskIcon: '',
     taskBadge: '回归专属',
     createTime: '2026-07-08 16:05:20',
@@ -1535,15 +1158,20 @@ const cfgTable = ref<TaskCfgRow[]>([
     configStatus: 'published',
     validityType: 'fixed',
     validStartTime: '2026-06-15 00:00:00', validEndTime: '2026-08-31 23:59:59',
+    enableOrderLimit: true, minOrderCount: 200,
+    enableMemberCardLimit: false, memberCardCondition: 'no_both',
+    enableDriverTags: false, driverTags: [],
+    enableCrowdLimit: false, crowdCodes: [],
+    enableAbLimit: true, abExpId: 'AB_EXP_001', abGroups: ['group_a', 'group_b'],
     cycleType: 'cycle', cooldownDays: 36,
     taskType: 'finish_order', targetOrderCount: 50,
     hasDriverMetric: true, metricType: 'finish_rate', metricThreshold: 80,
-    rewardTypes: ['cash', 'normal'],
-    cashRewardCode: 'CASH_SPRINT_005', normalRewardCode: 'PRIZE_SPRINT_005',
+    rewardTypes: ['normal'],
+    normalRewardCode: 'PRIZE_SPRINT_005',
     taskTitle: '暑期冲刺50单+接完率80%领大奖',
     taskSubtitle: '',
-    taskDesc: '每周期3天，50单+接完率≥80%可得现金+实物奖品。',
-    rewardDesc: '奖励：50 元现金 + 定制行李箱贴纸套装；以实物发货为准。',
+    taskDesc: '每周期3天，50单+接完率≥80%可得实物奖品。',
+    rewardDesc: '奖励：定制行李箱贴纸套装；以实物发货为准。',
     taskIcon: '',
     taskBadge: '',
     createTime: '2026-06-15 11:30:00',
@@ -1554,11 +1182,16 @@ const cfgTable = ref<TaskCfgRow[]>([
     taskStatus: 'valid',
     configStatus: 'published',
     validityType: 'longterm', validStartTime: '', validEndTime: '',
+    enableOrderLimit: false, minOrderCount: 0,
+    enableMemberCardLimit: false, memberCardCondition: 'no_both',
+    enableDriverTags: true, driverTags: ['staff_driver'],
+    enableCrowdLimit: false, crowdCodes: [],
+    enableAbLimit: false, abExpId: '', abGroups: [],
     cycleType: 'cycle', cooldownDays: 30,
     taskType: 'finish_order', targetOrderCount: 100,
     hasDriverMetric: true, metricType: 'service_score', metricThreshold: 95,
     rewardTypes: ['normal'],
-    normalRewardCode: 'PRIZE_STAR_006', cashRewardCode: '',
+    normalRewardCode: 'PRIZE_STAR_006',
     taskTitle: '月度服务之星·评分达标赢好礼',
     taskSubtitle: '服务评分≥95分',
     taskDesc: '月度完成100单且服务评分≥95即可领取奖品。',
@@ -1573,11 +1206,16 @@ const cfgTable = ref<TaskCfgRow[]>([
     taskStatus: 'valid',
     configStatus: 'published',
     validityType: 'longterm', validStartTime: '', validEndTime: '',
+    enableOrderLimit: false, minOrderCount: 0,
+    enableMemberCardLimit: false, memberCardCondition: 'no_both',
+    enableDriverTags: false, driverTags: [],
+    enableCrowdLimit: false, crowdCodes: [],
+    enableAbLimit: false, abExpId: '', abGroups: [],
     cycleType: 'cycle', cooldownDays: 1,
     taskType: 'finish_order', targetOrderCount: 5,
     hasDriverMetric: false, metricType: 'finish_rate', metricThreshold: 0,
     rewardTypes: ['normal'],
-    normalRewardCode: 'PRIZE_DAILY_007', cashRewardCode: '',
+    normalRewardCode: 'PRIZE_DAILY_007',
     taskTitle: '每日完成5单领基础奖励',
     taskSubtitle: '轻松每日达成',
     taskDesc: '每日完成5单即可领取基础奖励。',
@@ -1593,15 +1231,20 @@ const cfgTable = ref<TaskCfgRow[]>([
     configStatus: 'published',
     validityType: 'fixed',
     validStartTime: '2026-07-10 00:00:00', validEndTime: '2026-12-31 23:59:59',
+    enableOrderLimit: false, minOrderCount: 0,
+    enableMemberCardLimit: true, memberCardCondition: 'no_gift',
+    enableDriverTags: false, driverTags: [],
+    enableCrowdLimit: true, crowdCodes: ['low_active_driver'],
+    enableAbLimit: false, abExpId: '', abGroups: [],
     cycleType: 'once', cooldownDays: 0,
     taskType: 'finish_order', targetOrderCount: 3,
     hasDriverMetric: false, metricType: 'finish_rate', metricThreshold: 0,
-    rewardTypes: ['cash'],
-    cashRewardCode: 'CASH_LOWACT_008', normalRewardCode: '',
+    rewardTypes: ['normal'],
+    normalRewardCode: 'PRIZE_LOWACT_008',
     taskTitle: '完成3单激活奖励',
     taskSubtitle: '低活司机专属',
     taskDesc: '3单即可领取激活奖励。',
-    rewardDesc: '激活奖励 12 元现金，到账后可在钱包提现使用。',
+    rewardDesc: '激活奖励：价值 12 元的券包。',
     taskIcon: '',
     taskBadge: '专属激活',
     createTime: '2026-07-10 09:30:00',
@@ -1636,6 +1279,17 @@ interface CfgForm {
   validityType: 'fixed' | 'longterm'
   validStartTime: string
   validEndTime: string
+  enableOrderLimit: boolean
+  minOrderCount: number
+  enableMemberCardLimit: boolean
+  memberCardCondition: 'no_gift' | 'no_purchase' | 'no_both'
+  enableDriverTags: boolean
+  driverTags: string[]
+  enableCrowdLimit: boolean
+  crowdCodes: string[]
+  enableAbLimit: boolean
+  abExpId: string
+  abGroups: string[]
   cycleType: CycleType
   cooldownDays: number
   taskType: 'finish_order'
@@ -1643,9 +1297,8 @@ interface CfgForm {
   hasDriverMetric: boolean
   metricType: MetricType
   metricThreshold: number
-  rewardTypes: ('normal' | 'cash')[]
+  rewardTypes: 'normal'[]
   normalRewardCode: string
-  cashRewardCode: string
   taskTitle: string
   taskSubtitle: string
   taskDesc: string
@@ -1656,11 +1309,16 @@ interface CfgForm {
 const cfgForm = reactive<CfgForm>({
   activityName: '', taskStatus: 'valid', configStatus: 'published',
   validityType: 'fixed', validStartTime: '', validEndTime: '',
+  enableOrderLimit: false, minOrderCount: 0,
+  enableMemberCardLimit: false, memberCardCondition: 'no_both',
+  enableDriverTags: false, driverTags: [],
+  enableCrowdLimit: false, crowdCodes: [],
+  enableAbLimit: false, abExpId: '', abGroups: [],
   cycleType: 'once', cooldownDays: 7,
   taskType: 'finish_order', targetOrderCount: 10,
   hasDriverMetric: true, metricType: 'finish_rate', metricThreshold: 75,
-  rewardTypes: ['cash'],
-  normalRewardCode: '', cashRewardCode: '',
+  rewardTypes: ['normal'],
+  normalRewardCode: '',
   taskTitle: '', taskSubtitle: '', taskDesc: '', rewardDesc: '',
   taskIcon: '', taskBadge: '',
 })
@@ -1669,11 +1327,16 @@ function resetCfgForm() {
   Object.assign(cfgForm, {
     activityName: '', taskStatus: 'valid', configStatus: 'published',
     validityType: 'fixed', validStartTime: '', validEndTime: '',
+    enableOrderLimit: false, minOrderCount: 0,
+    enableMemberCardLimit: false, memberCardCondition: 'no_both',
+    enableDriverTags: false, driverTags: [],
+    enableCrowdLimit: false, crowdCodes: [],
+    enableAbLimit: false, abExpId: '', abGroups: [],
     cycleType: 'once', cooldownDays: 7,
     taskType: 'finish_order', targetOrderCount: 10,
     hasDriverMetric: true, metricType: 'finish_rate', metricThreshold: 75,
-    rewardTypes: ['cash'],
-    normalRewardCode: '', cashRewardCode: '',
+    rewardTypes: ['normal'],
+    normalRewardCode: '',
     taskTitle: '', taskSubtitle: '', taskDesc: '', rewardDesc: '',
     taskIcon: '', taskBadge: '',
   } as CfgForm)
@@ -1687,6 +1350,17 @@ function fillCfgFormFromRow(row: TaskCfgRow) {
     validityType: row.validityType,
     validStartTime: row.validStartTime,
     validEndTime: row.validEndTime,
+    enableOrderLimit: row.enableOrderLimit,
+    minOrderCount: row.minOrderCount,
+    enableMemberCardLimit: row.enableMemberCardLimit,
+    memberCardCondition: row.memberCardCondition,
+    enableDriverTags: row.enableDriverTags,
+    driverTags: [...row.driverTags],
+    enableCrowdLimit: row.enableCrowdLimit,
+    crowdCodes: [...row.crowdCodes],
+    enableAbLimit: row.enableAbLimit,
+    abExpId: row.abExpId,
+    abGroups: [...row.abGroups],
     cycleType: row.cycleType,
     cooldownDays: row.cooldownDays,
     taskType: row.taskType,
@@ -1696,7 +1370,6 @@ function fillCfgFormFromRow(row: TaskCfgRow) {
     metricThreshold: row.metricThreshold,
     rewardTypes: [...row.rewardTypes],
     normalRewardCode: row.normalRewardCode,
-    cashRewardCode: row.cashRewardCode,
     taskTitle: row.taskTitle,
     taskSubtitle: row.taskSubtitle,
     taskDesc: row.taskDesc,
@@ -1704,7 +1377,6 @@ function fillCfgFormFromRow(row: TaskCfgRow) {
     taskIcon: row.taskIcon,
     taskBadge: row.taskBadge,
   } as CfgForm)
-  // 回填上传预览
   if (row.taskIcon) {
     taskIconFileList.value = [{ name: 'taskIcon.png', url: row.taskIcon } as any]
   } else {
@@ -1732,9 +1404,6 @@ function validateCfg(draft: boolean) {
     if (cfgForm.rewardTypes.includes('normal') && !cfgForm.normalRewardCode.trim()) {
       ElMessage.warning('请填写普通奖励领取 code'); return false
     }
-    if (cfgForm.rewardTypes.includes('cash') && !cfgForm.cashRewardCode.trim()) {
-      ElMessage.warning('请填写返现金奖励 code'); return false
-    }
     if (!cfgForm.taskTitle.trim()) { ElMessage.warning('请填写任务标题（前端展示）'); return false }
   }
   return true
@@ -1753,6 +1422,17 @@ function makeCfgRowFromForm(): TaskCfgRow {
     validityType: cfgForm.validityType,
     validStartTime: cfgForm.validStartTime,
     validEndTime: cfgForm.validEndTime,
+    enableOrderLimit: cfgForm.enableOrderLimit,
+    minOrderCount: cfgForm.minOrderCount,
+    enableMemberCardLimit: cfgForm.enableMemberCardLimit,
+    memberCardCondition: cfgForm.memberCardCondition,
+    enableDriverTags: cfgForm.enableDriverTags,
+    driverTags: [...cfgForm.driverTags],
+    enableCrowdLimit: cfgForm.enableCrowdLimit,
+    crowdCodes: [...cfgForm.crowdCodes],
+    enableAbLimit: cfgForm.enableAbLimit,
+    abExpId: cfgForm.abExpId,
+    abGroups: [...cfgForm.abGroups],
     cycleType: cfgForm.cycleType,
     cooldownDays: cfgForm.cycleType === 'cycle' ? cfgForm.cooldownDays : 0,
     taskType: cfgForm.taskType,
@@ -1762,7 +1442,6 @@ function makeCfgRowFromForm(): TaskCfgRow {
     metricThreshold: cfgForm.metricThreshold,
     rewardTypes: [...cfgForm.rewardTypes],
     normalRewardCode: cfgForm.normalRewardCode,
-    cashRewardCode: cfgForm.cashRewardCode,
     taskTitle: cfgForm.taskTitle,
     taskSubtitle: cfgForm.taskSubtitle,
     taskDesc: cfgForm.taskDesc,
@@ -1844,48 +1523,14 @@ function onSubmitCfg() {
   cfgDialog.visible = false
 }
 
-/* ====================================================== */
-/* ========== 页面 2：任务投放组管理 ========== */
-/* ====================================================== */
-
-const dlFilter = reactive({
-  name: '',
-  configStatus: undefined as ConfigStatus | undefined,
-})
-const appliedDlFilter = reactive({ ...dlFilter })
-const dlPage = reactive({ current: 1, size: 10, jump: 1 })
-
-function dlRow(row: unknown): DlRow { return row as DlRow }
-function dlRowEditStyle(row: unknown) {
-  const r = dlRow(row)
-  const disabled = r.configStatus === 'published'
-  return { opacity: disabled ? 0.45 : 1, cursor: disabled ? 'not-allowed' : 'pointer' }
-}
-function dlRowEditClick(row: unknown) {
-  const r = dlRow(row)
-  if (r.configStatus !== 'published') onEditDl(r)
-}
-
-/* 可用任务选项：供投放管理 5.2.3 关联任务选择 */
-const selectableTaskOptions = computed(() => {
-  return getValidTasks().map((t) => ({
-    taskId: t.taskId,
-    displayName: `[${t.taskId}] ${t.activityName} — ${t.taskTitle}`,
-  }))
-})
-/* 多选框中选中的 taskId 列表，作为双向驱动 */
-const pickTaskIds = ref<string[]>([])
-
 /* 任务 icon 上传文件列表（picture-card 模式预览使用） */
 const taskIconFileList = ref<any[]>([])
 function onTaskIconChange(uploadFile: any) {
   if (uploadFile && uploadFile.raw) {
-    // 释放之前已存在的本地预览 URL，避免内存泄漏
     if (cfgForm.taskIcon && cfgForm.taskIcon.startsWith('blob:')) {
       try { URL.revokeObjectURL(cfgForm.taskIcon) } catch {}
     }
     cfgForm.taskIcon = URL.createObjectURL(uploadFile.raw)
-    // 单图强约束：始终只保留最后选择的一张
     taskIconFileList.value = [{
       name: uploadFile.name || 'task-icon',
       url: cfgForm.taskIcon,
@@ -1904,431 +1549,12 @@ function onTaskIconExceed() {
   ElMessage.warning('任务 icon 仅允许上传一张图片，请先移除现有图片')
 }
 
-function onPickTaskIdsChange(ids: string[]) {
-  const current = new Map(dlForm.tasks.map((t) => [t.taskId, t]))
-  const nextMap = new Map<string, DlTaskItem>()
-  // 保留已有的 displayOrder / isTop 配置
-  ids.forEach((id) => {
-    if (current.has(id)) {
-      nextMap.set(id, current.get(id) as DlTaskItem)
-    } else {
-      const t = cfgTable.value.find((c) => c.taskId === id)
-      if (t) {
-        nextMap.set(id, {
-          taskId: t.taskId,
-          activityName: t.activityName,
-          taskTitle: t.taskTitle,
-          targetOrderCount: t.targetOrderCount,
-          hasDriverMetric: t.hasDriverMetric,
-          metricType: t.metricType,
-          metricThreshold: t.metricThreshold,
-          displayOrder: nextMap.size + 1,
-          isTop: false,
-        })
-      }
-    }
-  })
-  dlForm.tasks = ids.map((id) => nextMap.get(id)).filter(Boolean) as DlTaskItem[]
-}
-
-const dlTable = ref<DlRow[]>([
-  {
-    key: '1',
-    deliveryPlanId: 'DL20260710001',
-    deliveryName: '高活跃司机-暑期冲刺投放组',
-    configStatus: 'published',
-    priority: 90,
-    validityType: 'fixed',
-    validStartTime: '2026-07-01 00:00:00',
-    validEndTime: '2026-08-31 23:59:59',
-    enableCrowd: true,
-    crowdCodes: ['CROWD_HIGH_ACTIVE', 'CROWD_CORE_CITY'],
-    enableAb: true,
-    abExpId: 'AB2026SUMMER',
-    abGroups: ['B1', 'B2'],
-    enableOrderLimit: true,
-    minOrderCount: 100,
-    enableBenefitCardLimit: true,
-    benefitCardCondition: 'exists',
-    tasks: [
-      { taskId: 'TASK202607090001', activityName: 'Q3高活跃司机完单激励-现金版', taskTitle: '本周完成30单，领现金奖励', targetOrderCount: 30, hasDriverMetric: true, metricType: 'finish_rate', metricThreshold: 75, displayOrder: 1, isTop: true },
-      { taskId: 'TASK202607090006', activityName: '月度服务之星-评分达标奖励', taskTitle: '月度服务之星·评分达标赢好礼', targetOrderCount: 100, hasDriverMetric: true, metricType: 'service_score', metricThreshold: 95, displayOrder: 2, isTop: false },
-      { taskId: 'TASK20260710007', activityName: '每日完单5单-基础任务', taskTitle: '每日完成5单领基础奖励', targetOrderCount: 5, hasDriverMetric: false, metricType: 'finish_rate', metricThreshold: 0, displayOrder: 3, isTop: false },
-    ],
-    createTime: '2026-06-28 15:20:00',
-  },
-  {
-    key: '2',
-    deliveryPlanId: 'DL20260710002',
-    deliveryName: '新司机-首月成长投放组',
-    configStatus: 'published',
-    priority: 80,
-    validityType: 'longterm',
-    validStartTime: '',
-    validEndTime: '',
-    enableCrowd: true,
-    crowdCodes: ['CROWD_NEW_DRIVER'],
-    enableAb: false,
-    abExpId: '',
-    abGroups: [],
-    enableOrderLimit: false,
-    minOrderCount: 0,
-    enableBenefitCardLimit: true,
-    benefitCardCondition: 'not_exists',
-    tasks: [
-      { taskId: 'TASK202607090002', activityName: '新司机首月完单20单领券包', taskTitle: '新人首月完成20单，领取超值券包', targetOrderCount: 20, hasDriverMetric: false, metricType: 'finish_rate', metricThreshold: 0, displayOrder: 1, isTop: true },
-      { taskId: 'TASK20260710007', activityName: '每日完单5单-基础任务', taskTitle: '每日完成5单领基础奖励', targetOrderCount: 5, hasDriverMetric: false, metricType: 'finish_rate', metricThreshold: 0, displayOrder: 2, isTop: false },
-    ],
-    createTime: '2026-07-01 10:00:00',
-  },
-  {
-    key: '3',
-    deliveryPlanId: 'DL20260710003',
-    deliveryName: '召回司机-回归专属投放组',
-    configStatus: 'pending',
-    priority: 70,
-    validityType: 'fixed',
-    validStartTime: '2026-07-20 00:00:00',
-    validEndTime: '2026-09-30 23:59:59',
-    enableCrowd: true,
-    crowdCodes: ['CROWD_CALLBACK'],
-    enableAb: true,
-    abExpId: 'AB2026CALLBACK',
-    abGroups: ['B1'],
-    enableOrderLimit: true,
-    minOrderCount: 50,
-    enableBenefitCardLimit: false,
-    benefitCardCondition: 'exists',
-    tasks: [
-      { taskId: 'TASK202607090004', activityName: '召回司机专属-完单10单领现金20元', taskTitle: '回归专属：完成10单领20元现金', targetOrderCount: 10, hasDriverMetric: true, metricType: 'finish_rate', metricThreshold: 70, displayOrder: 1, isTop: true },
-    ],
-    createTime: '2026-07-10 14:00:00',
-  },
-  {
-    key: '4',
-    deliveryPlanId: 'DL20260710004',
-    deliveryName: '低完单率司机-提升计划投放组',
-    configStatus: 'pending',
-    priority: 60,
-    validityType: 'longterm',
-    validStartTime: '',
-    validEndTime: '',
-    enableCrowd: true,
-    crowdCodes: ['CROWD_LOW_FINISH'],
-    enableAb: true,
-    abExpId: 'AB2026LOWFINISH',
-    abGroups: ['A', 'B1'],
-    enableOrderLimit: false,
-    minOrderCount: 0,
-    enableBenefitCardLimit: false,
-    benefitCardCondition: 'exists',
-    tasks: [
-      { taskId: 'TASK202607090003', activityName: '低完单率司机每日接单率提升任务', taskTitle: '每日完成15单 + 接单率≥60% 领双份奖励', targetOrderCount: 15, hasDriverMetric: true, metricType: 'accept_rate', metricThreshold: 60, displayOrder: 1, isTop: true },
-      { taskId: 'TASK20260710007', activityName: '每日完单5单-基础任务', taskTitle: '每日完成5单领基础奖励', targetOrderCount: 5, hasDriverMetric: false, metricType: 'finish_rate', metricThreshold: 0, displayOrder: 2, isTop: false },
-    ],
-    createTime: '2026-07-10 11:30:00',
-  },
-  {
-    key: '5',
-    deliveryPlanId: 'DL20260710005',
-    deliveryName: '核心城市司机-历史下线投放',
-    configStatus: 'offline',
-    priority: 85,
-    validityType: 'fixed',
-    validStartTime: '2026-06-01 00:00:00',
-    validEndTime: '2026-06-30 23:59:59',
-    enableCrowd: true,
-    crowdCodes: ['CROWD_CORE_CITY'],
-    enableAb: false,
-    abExpId: '',
-    abGroups: [],
-    enableOrderLimit: true,
-    minOrderCount: 200,
-    enableBenefitCardLimit: true,
-    benefitCardCondition: 'exists',
-    tasks: [
-      { taskId: 'TASK202607090005', activityName: '核心城市暑期司机冲刺任务', taskTitle: '暑期冲刺50单+接完率80%领大奖', targetOrderCount: 50, hasDriverMetric: true, metricType: 'finish_rate', metricThreshold: 80, displayOrder: 1, isTop: true },
-      { taskId: 'TASK20260710007', activityName: '每日完单5单-基础任务', taskTitle: '每日完成5单领基础奖励', targetOrderCount: 5, hasDriverMetric: false, metricType: 'finish_rate', metricThreshold: 0, displayOrder: 2, isTop: false },
-    ],
-    createTime: '2026-05-28 18:15:00',
-  },
-  {
-    key: '6',
-    deliveryPlanId: 'DL20260710006',
-    deliveryName: '低活激活-专项投放组',
-    configStatus: 'published',
-    priority: 75,
-    validityType: 'fixed',
-    validStartTime: '2026-07-10 00:00:00',
-    validEndTime: '2026-12-31 23:59:59',
-    enableCrowd: false,
-    crowdCodes: [],
-    enableAb: false,
-    abExpId: '',
-    abGroups: [],
-    enableOrderLimit: false,
-    minOrderCount: 0,
-    enableBenefitCardLimit: false,
-    benefitCardCondition: 'exists',
-    tasks: [
-      { taskId: 'TASK20260710008', activityName: '低活司机专项激活任务', taskTitle: '完成3单激活奖励', targetOrderCount: 3, hasDriverMetric: false, metricType: 'finish_rate', metricThreshold: 0, displayOrder: 1, isTop: true },
-    ],
-    createTime: '2026-07-10 09:45:00',
-  },
-])
-
-const filteredDlTable = computed<DlRow[]>(() => {
-  return dlTable.value.filter((row) => {
-    if (appliedDlFilter.name && !row.deliveryName.includes(appliedDlFilter.name)) return false
-    if (appliedDlFilter.configStatus && row.configStatus !== appliedDlFilter.configStatus) return false
-    return true
-  })
-})
-
-/* ------- 投放组弹窗 ------- */
-const dlDialog = reactive({
-  visible: false,
-  mode: 'create' as DialogMode,
-  editingKey: '' as string,
-})
-const dlDialogTitle = computed(() => ({
-  create: '新建任务投放组', edit: '编辑任务投放组', view: '查看任务投放组详情',
-} as const)[dlDialog.mode])
-
-interface DlForm {
-  deliveryName: string
-  validityType: 'fixed' | 'longterm'
-  validStartTime: string
-  validEndTime: string
-  priority: number
-  enableCrowd: boolean
-  crowdCodes: string[]
-  enableAb: boolean
-  abExpId: string
-  abGroups: string[]
-  enableOrderLimit: boolean
-  minOrderCount: number
-  enableBenefitCardLimit: boolean
-  benefitCardCondition: 'exists' | 'not_exists'
-  tasks: DlTaskItem[]
-}
-const dlForm = reactive<DlForm>({
-  deliveryName: '',
-  validityType: 'longterm',
-  validStartTime: '', validEndTime: '',
-  priority: 50,
-  enableCrowd: false, crowdCodes: [],
-  enableAb: false, abExpId: '', abGroups: [],
-  enableOrderLimit: false, minOrderCount: 0,
-  enableBenefitCardLimit: false, benefitCardCondition: 'exists',
-  tasks: [],
-})
-function resetDlForm() {
-  Object.assign(dlForm, {
-    deliveryName: '', validityType: 'longterm',
-    validStartTime: '', validEndTime: '',
-    priority: 50,
-    enableCrowd: false, crowdCodes: [],
-    enableAb: false, abExpId: '', abGroups: [],
-    enableOrderLimit: false, minOrderCount: 0,
-    enableBenefitCardLimit: false, benefitCardCondition: 'exists',
-    tasks: [],
-  } as DlForm)
-  pickTaskIds.value = []
-}
-function fillDlFormFromRow(row: DlRow) {
-  Object.assign(dlForm, {
-    deliveryName: row.deliveryName,
-    validityType: row.validityType,
-    validStartTime: row.validStartTime,
-    validEndTime: row.validEndTime,
-    priority: row.priority,
-    enableCrowd: row.enableCrowd,
-    crowdCodes: [...row.crowdCodes],
-    enableAb: row.enableAb,
-    abExpId: row.abExpId,
-    abGroups: [...row.abGroups],
-    enableOrderLimit: row.enableOrderLimit,
-    minOrderCount: row.minOrderCount,
-    enableBenefitCardLimit: row.enableBenefitCardLimit,
-    benefitCardCondition: row.benefitCardCondition,
-    tasks: row.tasks.map((t) => ({ ...t })),
-  } as DlForm)
-  pickTaskIds.value = row.tasks.map((t) => t.taskId)
-}
-function validateDl(draft: boolean) {
-  if (!draft) {
-    if (!dlForm.deliveryName.trim()) { ElMessage.warning('请填写投放名称'); return false }
-    if (dlForm.validityType === 'fixed') {
-      if (!dlForm.validStartTime || !dlForm.validEndTime) {
-        ElMessage.warning('请选择投放有效期起止时间'); return false
-      }
-      if (dlForm.validStartTime >= dlForm.validEndTime) {
-        ElMessage.warning('投放开始时间需早于结束时间'); return false
-      }
-    }
-    if (!dlForm.priority || dlForm.priority <= 0) {
-      ElMessage.warning('请设置任务投放组优先级'); return false
-    }
-    if (dlForm.enableCrowd && dlForm.crowdCodes.length === 0) {
-      ElMessage.warning('启用先知人群限制后需选择人群'); return false
-    }
-    if (dlForm.enableAb) {
-      if (!dlForm.abExpId.trim()) { ElMessage.warning('请填写 AB 实验编号'); return false }
-      if (dlForm.abGroups.length === 0) { ElMessage.warning('请选择 AB 实验组'); return false }
-    }
-    if (dlForm.tasks.length === 0) { ElMessage.warning('请至少关联一个任务'); return false }
-    // 唯一性 & 有效性校验
-    const ids = new Set(dlForm.tasks.map((t) => t.taskId))
-    if (ids.size !== dlForm.tasks.length) {
-      ElMessage.warning('同一投放组内关联任务不可重复'); return false
-    }
-    const pool = new Set(getValidTasks().map((t) => t.taskId))
-    for (const t of dlForm.tasks) {
-      if (!pool.has(t.taskId)) {
-        ElMessage.warning(`任务 ${t.taskId} 未发布或已无效，不允许关联`); return false
-      }
-      if (!t.displayOrder || t.displayOrder <= 0) {
-        ElMessage.warning(`任务 ${t.taskId} 的展示顺序需为正整数`); return false
-      }
-    }
-  }
-  return true
-}
-function makeDlRowFromForm(status: ConfigStatus): DlRow {
-  const now = new Date()
-  const date8 = now.toISOString().slice(0, 10).replace(/-/g, '')
-  const rand = String(Math.floor(Math.random() * 9000) + 1000)
-  return {
-    key: String(Date.now()),
-    deliveryPlanId: 'DL' + date8 + rand,
-    deliveryName: dlForm.deliveryName || '未命名投放组',
-    configStatus: status,
-    priority: dlForm.priority,
-    validityType: dlForm.validityType,
-    validStartTime: dlForm.validStartTime,
-    validEndTime: dlForm.validEndTime,
-    enableCrowd: dlForm.enableCrowd,
-    crowdCodes: [...dlForm.crowdCodes],
-    enableAb: dlForm.enableAb,
-    abExpId: dlForm.abExpId,
-    abGroups: [...dlForm.abGroups],
-    enableOrderLimit: dlForm.enableOrderLimit,
-    minOrderCount: dlForm.minOrderCount,
-    enableBenefitCardLimit: dlForm.enableBenefitCardLimit,
-    benefitCardCondition: dlForm.benefitCardCondition,
-    tasks: dlForm.tasks.map((t) => ({ ...t })),
-    createTime: now.toISOString().slice(0, 19).replace('T', ' '),
-  }
-}
-function onRemoveTaskFromDl(row: unknown, index: number) {
-  const t = row as DlTaskItem
-  dlForm.tasks.splice(index, 1)
-  pickTaskIds.value = pickTaskIds.value.filter((id) => id !== t.taskId)
-}
-
-/* 按钮 */
-function onDlSearch() {
-  Object.assign(appliedDlFilter, dlFilter)
-  dlPage.current = 1
-  ElMessage.success('查询成功')
-}
-function onDlReset() {
-  dlFilter.name = ''
-  dlFilter.configStatus = undefined
-  Object.assign(appliedDlFilter, dlFilter)
-  dlPage.current = 1
-  ElMessage.info('已重置筛选条件')
-}
-function onCreateDl() {
-  resetDlForm()
-  dlDialog.mode = 'create'; dlDialog.editingKey = ''
-  dlDialog.visible = true
-}
-function onViewDl(row: unknown) {
-  const r = dlRow(row)
-  fillDlFormFromRow(r)
-  dlDialog.mode = 'view'; dlDialog.editingKey = r.key
-  dlDialog.visible = true
-}
-function onEditDl(row: DlRow | unknown) {
-  const r = dlRow(row)
-  fillDlFormFromRow(r)
-  dlDialog.mode = 'edit'; dlDialog.editingKey = r.key
-  dlDialog.visible = true
-}
-function onPublishDl(row: unknown) {
-  const r = dlRow(row)
-  // 发布前校验（和提交校验一致）
-  const tasksValid = r.tasks.length > 0
-    && r.tasks.every((t) => getValidTasks().some((c) => c.taskId === t.taskId))
-  if (!tasksValid) {
-    ElMessage.error('关联任务存在未发布或已无效项，不能发布，请先编辑')
-    return
-  }
-  ElMessageBox.confirm(
-    `确认发布投放组「${r.deliveryName}」？发布后按命中规则参与司机端命中判断。`,
-    '发布确认', { type: 'warning' },
-  )
-    .then(() => { r.configStatus = 'published'; ElMessage.success('发布成功') })
-    .catch(() => {})
-}
-function onOfflineDl(row: unknown) {
-  const r = dlRow(row)
-  ElMessageBox.confirm(
-    `确认下线投放组「${r.deliveryName}」？下线后司机端将不再命中该投放组。`,
-    '下线确认', { type: 'warning' },
-  )
-    .then(() => { r.configStatus = 'offline'; ElMessage.success('下线成功') })
-    .catch(() => {})
-}
-function onLogDl(row: unknown) {
-  ElMessage.info(`查看 ${dlRow(row).deliveryPlanId} 操作日志（待接入）`)
-}
-function onSaveDlDraft() {
-  if (!validateDl(true)) return
-  const newRow = makeDlRowFromForm('pending')
-  if (dlDialog.mode === 'create') {
-    dlTable.value.unshift(newRow)
-  } else {
-    const idx = dlTable.value.findIndex((r) => r.key === dlDialog.editingKey)
-    if (idx >= 0) {
-      newRow.key = dlTable.value[idx].key
-      newRow.deliveryPlanId = dlTable.value[idx].deliveryPlanId
-      newRow.configStatus = dlTable.value[idx].configStatus
-      newRow.createTime = dlTable.value[idx].createTime
-      dlTable.value[idx] = newRow
-    }
-  }
-  dlDialog.visible = false
-  ElMessage.success('草稿已保存（配置状态：待发布）')
-}
-function onSubmitDl() {
-  if (!validateDl(false)) return
-  const newRow = makeDlRowFromForm('pending')
-  if (dlDialog.mode === 'create') {
-    dlTable.value.unshift(newRow)
-    ElMessage.success('任务投放组创建成功（待发布）')
-  } else {
-    const idx = dlTable.value.findIndex((r) => r.key === dlDialog.editingKey)
-    if (idx >= 0) {
-      newRow.key = dlTable.value[idx].key
-      newRow.deliveryPlanId = dlTable.value[idx].deliveryPlanId
-      newRow.createTime = dlTable.value[idx].createTime
-      dlTable.value[idx] = newRow
-      ElMessage.success('任务投放组修改成功')
-    }
-  }
-  dlDialog.visible = false
-}
-
 /* ====================================================== */
-/* ========== 页面 3：任务参与记录 ========== */
+/* ========== 页面 2：任务参与记录 ========== */
 /* ====================================================== */
 
 const dataFilter = reactive({
   driverId: '',
-  deliveryPlanId: '',
   taskId: '',
   userTaskStatus: undefined as UserTaskStatus | undefined,
   claimStatus: undefined as ClaimStatus | undefined,
@@ -2341,39 +1567,34 @@ function partRow(row: unknown): PartRow { return row as PartRow }
 const dataTable = ref<PartRow[]>([
   {
     key: '1', driverId: 'DRV88310001',
-    deliveryPlanId: 'DL20260710001', deliveryName: '高活跃司机-暑期冲刺投放组',
     deliveryTaskRelationId: 'REL-0001-01',
     taskId: 'TASK202607090001',
     participationId: 'PART-0710-0001-A1',
-    taskTitle: '本周完成30单，领现金奖励',
+    taskTitle: '本周完成30单，领取奖励',
     userTaskStatus: 'progress',
     completedOrderCount: 18, targetOrderCount: 30,
     hasDriverMetric: true, metricType: 'finish_rate',
     metricThreshold: 75, driverMetricValue: 72,
     claimStatus: 'unclaimed',
-    rewardTypes: ['cash'], cashResult: 'none', prizeResult: 'none',
-    cashRewardCode: 'CASH_TASK_0001',
+    rewardTypes: ['normal'], prizeResult: 'none',
     cycleStartTime: '2026-07-08 00:00:00',
   },
   {
     key: '2', driverId: 'DRV88310002',
-    deliveryPlanId: 'DL20260710001', deliveryName: '高活跃司机-暑期冲刺投放组',
     deliveryTaskRelationId: 'REL-0001-01',
     taskId: 'TASK202607090001',
     participationId: 'PART-0710-0001-A2',
-    taskTitle: '本周完成30单，领现金奖励',
+    taskTitle: '本周完成30单，领取奖励',
     userTaskStatus: 'claimable',
     completedOrderCount: 32, targetOrderCount: 30,
     hasDriverMetric: true, metricType: 'finish_rate',
     metricThreshold: 75, driverMetricValue: 78,
     claimStatus: 'unclaimed',
-    rewardTypes: ['cash'], cashResult: 'none', prizeResult: 'none',
-    cashRewardCode: 'CASH_TASK_0001',
+    rewardTypes: ['normal'], prizeResult: 'none',
     cycleStartTime: '2026-07-08 00:00:00',
   },
   {
     key: '3', driverId: 'DRV88310003',
-    deliveryPlanId: 'DL20260710002', deliveryName: '新司机-首月成长投放组',
     deliveryTaskRelationId: 'REL-0002-01',
     taskId: 'TASK202607090002',
     participationId: 'PART-0710-0002-B1',
@@ -2383,60 +1604,54 @@ const dataTable = ref<PartRow[]>([
     hasDriverMetric: false, metricType: 'finish_rate',
     metricThreshold: 0, driverMetricValue: 0,
     claimStatus: 'success',
-    rewardTypes: ['normal'], cashResult: 'none', prizeResult: 'success',
+    rewardTypes: ['normal'], prizeResult: 'success',
     prizeRewardCode: 'PRIZE_NEWDRIVER_002',
     cycleStartTime: '2026-07-01 00:00:00', claimTime: '2026-07-06 21:05:32',
   },
   {
     key: '4', driverId: 'DRV88310004',
-    deliveryPlanId: 'DL20260710004', deliveryName: '低完单率司机-提升计划投放组',
     deliveryTaskRelationId: 'REL-0004-01',
     taskId: 'TASK202607090003',
     participationId: 'PART-0710-0003-C1',
-    taskTitle: '每日完成15单 + 接单率≥60% 领双份奖励',
+    taskTitle: '每日完成15单 + 接单率≥60% 领奖励',
     userTaskStatus: 'claimable',
     completedOrderCount: 16, targetOrderCount: 15,
     hasDriverMetric: true, metricType: 'accept_rate',
     metricThreshold: 60, driverMetricValue: 64,
     claimStatus: 'unclaimed',
-    rewardTypes: ['cash', 'normal'], cashResult: 'none', prizeResult: 'none',
+    rewardTypes: ['normal'], prizeResult: 'none',
     cycleStartTime: '2026-07-10 00:00:00',
   },
   {
     key: '5', driverId: 'DRV88310005',
-    deliveryPlanId: 'DL20260710004', deliveryName: '低完单率司机-提升计划投放组',
     deliveryTaskRelationId: 'REL-0004-01',
     taskId: 'TASK202607090003',
     participationId: 'PART-0710-0003-C2',
-    taskTitle: '每日完成15单 + 接单率≥60% 领双份奖励',
+    taskTitle: '每日完成15单 + 接单率≥60% 领奖励',
     userTaskStatus: 'claimed',
     completedOrderCount: 17, targetOrderCount: 15,
     hasDriverMetric: true, metricType: 'accept_rate',
     metricThreshold: 60, driverMetricValue: 66,
-    claimStatus: 'partial',
-    rewardTypes: ['cash', 'normal'],
-    cashResult: 'success', prizeResult: 'fail',
+    claimStatus: 'fail',
+    rewardTypes: ['normal'], prizeResult: 'fail',
     cycleStartTime: '2026-07-08 00:00:00', claimTime: '2026-07-08 22:11:45',
   },
   {
     key: '6', driverId: 'DRV88310006',
-    deliveryPlanId: 'DL20260710001', deliveryName: '高活跃司机-暑期冲刺投放组',
     deliveryTaskRelationId: 'REL-0001-01',
     taskId: 'TASK202607090001',
     participationId: 'PART-0710-0001-A3',
-    taskTitle: '本周完成30单，领现金奖励',
+    taskTitle: '本周完成30单，领取奖励',
     userTaskStatus: 'cooldown',
     completedOrderCount: 30, targetOrderCount: 30,
     hasDriverMetric: true, metricType: 'finish_rate',
     metricThreshold: 75, driverMetricValue: 80,
     claimStatus: 'success',
-    rewardTypes: ['cash'], cashResult: 'success', prizeResult: 'none',
-    cashRewardCode: 'CASH_TASK_0001',
+    rewardTypes: ['normal'], prizeResult: 'success',
     cycleStartTime: '2026-07-01 00:00:00', claimTime: '2026-07-07 19:30:10',
   },
   {
     key: '7', driverId: 'DRV88310007',
-    deliveryPlanId: 'DL20260710005', deliveryName: '核心城市司机-历史下线投放',
     deliveryTaskRelationId: 'REL-0005-01',
     taskId: 'TASK202607090005',
     participationId: 'PART-0710-0005-D1',
@@ -2446,28 +1661,25 @@ const dataTable = ref<PartRow[]>([
     hasDriverMetric: true, metricType: 'finish_rate',
     metricThreshold: 80, driverMetricValue: 82,
     claimStatus: 'unclaimed',
-    rewardTypes: ['cash', 'normal'], cashResult: 'none', prizeResult: 'none',
+    rewardTypes: ['normal'], prizeResult: 'none',
     cycleStartTime: '2026-06-20 00:00:00',
   },
   {
     key: '8', driverId: 'DRV88310008',
-    deliveryPlanId: 'DL20260710003', deliveryName: '召回司机-回归专属投放组',
     deliveryTaskRelationId: 'REL-0003-01',
     taskId: 'TASK202607090004',
     participationId: 'PART-0710-0004-E1',
-    taskTitle: '回归专属：完成10单领20元现金',
+    taskTitle: '回归专属：完成10单领奖励',
     userTaskStatus: 'claimed',
     completedOrderCount: 10, targetOrderCount: 10,
     hasDriverMetric: true, metricType: 'finish_rate',
     metricThreshold: 70, driverMetricValue: 75,
     claimStatus: 'fail',
-    rewardTypes: ['cash'], cashResult: 'fail', prizeResult: 'none',
-    cashRewardCode: 'CASH_CALLBACK_004',
+    rewardTypes: ['normal'], prizeResult: 'fail',
     cycleStartTime: '2026-07-05 00:00:00', claimTime: '2026-07-09 10:22:05',
   },
   {
     key: '9', driverId: 'DRV88310009',
-    deliveryPlanId: 'DL20260710001', deliveryName: '高活跃司机-暑期冲刺投放组',
     deliveryTaskRelationId: 'REL-0001-02',
     taskId: 'TASK202607090006',
     participationId: 'PART-0710-0006-F1',
@@ -2477,13 +1689,12 @@ const dataTable = ref<PartRow[]>([
     hasDriverMetric: true, metricType: 'service_score',
     metricThreshold: 95, driverMetricValue: 93,
     claimStatus: 'unclaimed',
-    rewardTypes: ['normal'], cashResult: 'none', prizeResult: 'none',
+    rewardTypes: ['normal'], prizeResult: 'none',
     prizeRewardCode: 'PRIZE_STAR_006',
     cycleStartTime: '2026-07-01 00:00:00',
   },
   {
     key: '10', driverId: 'DRV88310010',
-    deliveryPlanId: 'DL20260710006', deliveryName: '低活激活-专项投放组',
     deliveryTaskRelationId: 'REL-0006-01',
     taskId: 'TASK20260710008',
     participationId: 'PART-0710-0008-H1',
@@ -2493,13 +1704,11 @@ const dataTable = ref<PartRow[]>([
     hasDriverMetric: false, metricType: 'finish_rate',
     metricThreshold: 0, driverMetricValue: 0,
     claimStatus: 'unclaimed',
-    rewardTypes: ['cash'], cashResult: 'none', prizeResult: 'none',
-    cashRewardCode: 'CASH_LOWACT_008',
+    rewardTypes: ['normal'], prizeResult: 'none',
     cycleStartTime: '2026-07-10 08:00:00',
   },
   {
     key: '11', driverId: 'DRV88310011',
-    deliveryPlanId: 'DL20260710002', deliveryName: '新司机-首月成长投放组',
     deliveryTaskRelationId: 'REL-0002-02',
     taskId: 'TASK20260710007',
     participationId: 'PART-0710-0007-G1',
@@ -2509,7 +1718,7 @@ const dataTable = ref<PartRow[]>([
     hasDriverMetric: false, metricType: 'finish_rate',
     metricThreshold: 0, driverMetricValue: 0,
     claimStatus: 'success',
-    rewardTypes: ['normal'], cashResult: 'none', prizeResult: 'success',
+    rewardTypes: ['normal'], prizeResult: 'success',
     prizeRewardCode: 'PRIZE_DAILY_007',
     cycleStartTime: '2026-07-09 00:00:00', claimTime: '2026-07-09 22:45:10',
   },
@@ -2519,8 +1728,6 @@ const filteredDataTable = computed<PartRow[]>(() => {
   return dataTable.value.filter((row) => {
     if (appliedDataFilter.driverId
       && !row.driverId.toLowerCase().includes(appliedDataFilter.driverId.toLowerCase())) return false
-    if (appliedDataFilter.deliveryPlanId
-      && !row.deliveryPlanId.toLowerCase().includes(appliedDataFilter.deliveryPlanId.toLowerCase())) return false
     if (appliedDataFilter.taskId
       && !row.taskId.toLowerCase().includes(appliedDataFilter.taskId.toLowerCase())) return false
     if (appliedDataFilter.userTaskStatus
@@ -2539,7 +1746,6 @@ function onDataSearch() {
 }
 function onDataReset() {
   dataFilter.driverId = ''
-  dataFilter.deliveryPlanId = ''
   dataFilter.taskId = ''
   dataFilter.userTaskStatus = undefined
   dataFilter.claimStatus = undefined
@@ -2556,35 +1762,18 @@ function onViewPart(row: unknown) {
   partDrawer.data = row
   partDrawer.visible = true
 }
-/* 详情抽屉内：按奖励类型重试发放（仅对当前奖励卡的发放结果=fail时可见/可用） */
-function onRetryIssueByType(type: 'cash' | 'normal') {
+function onRetryIssueByType() {
   if (!partDrawer.data) return
   const r = partRow(partDrawer.data)
-  const cashNeeded = r.rewardTypes.includes('cash')
-  const prizeNeeded = r.rewardTypes.includes('normal')
-  const label = type === 'cash' ? '现金奖励' : '普通奖品'
-  const target = type === 'cash' ? 'cashResult' : 'prizeResult'
-  if (r[target] !== 'fail') { ElMessage.info(`${label} 当前状态无需重试`); return }
+  if (r.prizeResult !== 'fail') { ElMessage.info('普通奖品当前状态无需重试'); return }
   ElMessageBox.confirm(
-    `对参与记录 ${r.participationId}（mid: ${r.driverId}）的「${label}」重新发起发放？`,
+    `对参与记录 ${r.participationId}（mid: ${r.driverId}）的「普通奖品」重新发起发放？`,
     '重试发放', { type: 'warning' },
   )
     .then(() => {
-      r[target] = 'success'
-      // 重新计算整体领取状态：cash/prize 都不再 fail（或根本无需）→ 成功；还有失败 → partial
-      const cashOk = !cashNeeded || r.cashResult !== 'fail'
-      const prizeOk = !prizeNeeded || r.prizeResult !== 'fail'
-      const cashPartial = cashNeeded && r.cashResult === 'success'
-      const prizePartial = prizeNeeded && r.prizeResult === 'success'
-      if (cashOk && prizeOk) {
-        // 全部必要项都 OK，且至少有一个达到 success → 整体领取成功
-        if ((cashNeeded && r.cashResult === 'success') || (prizeNeeded && r.prizeResult === 'success')) {
-          r.claimStatus = 'success'
-        }
-      } else if (cashPartial || prizePartial) {
-        r.claimStatus = 'partial'
-      }
-      ElMessage.success(`${label} 重试发放完成`)
+      r.prizeResult = 'success'
+      r.claimStatus = 'success'
+      ElMessage.success('普通奖品重试发放完成')
     })
     .catch(() => {})
 }
