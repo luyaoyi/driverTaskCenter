@@ -348,27 +348,7 @@
                 v-model="dataFilter.taskId"
                 placeholder="taskId" clearable style="width:170px"
               />
-              <span class="filter-label" style="margin-left:8px">用户任务状态</span>
-              <el-select
-                v-model="dataFilter.userTaskStatus"
-                placeholder="全部" clearable style="width:120px"
-              >
-                <el-option label="进行中" value="progress" />
-                <el-option label="待领取" value="claimable" />
-                <el-option label="已领取" value="claimed" />
-                <el-option label="已失效" value="expired" />
-                <el-option label="冷却中" value="cooldown" />
-              </el-select>
-              <span class="filter-label" style="margin-left:8px">领取状态</span>
-              <el-select
-                v-model="dataFilter.claimStatus"
-                placeholder="全部" clearable style="width:130px"
-              >
-                <el-option label="未领取" value="unclaimed" />
-                <el-option label="领取成功" value="success" />
-                <el-option label="部分失败" value="partial" />
-                <el-option label="领取失败" value="fail" />
-              </el-select>
+
             </div>
             <div class="filter-bar" style="margin-top: -8px">
               <el-button type="primary" class="filter-btn" @click="onDataSearch">
@@ -393,26 +373,7 @@
               <el-table-column
                 prop="participationId" label="参与记录ID" width="190" show-overflow-tooltip
               />
-              <el-table-column label="用户任务状态" width="100" align="center">
-                <template #default="{ row }">
-                  <el-tag
-                    :type="userTaskStatusTagType(partRow(row).userTaskStatus)"
-                    effect="light" size="small"
-                  >{{ userTaskStatusLabel(partRow(row).userTaskStatus) }}</el-tag>
-                </template>
-              </el-table-column>
-              <el-table-column label="完单进度" min-width="180">
-                <template #default="{ row }">
-                  <div class="progress-cell">
-                    <el-progress
-                      :percentage="Math.round(partRow(row).completedOrderCount / partRow(row).targetOrderCount * 100)"
-                      :stroke-width="8"
-                      :color="partRow(row).completedOrderCount >= partRow(row).targetOrderCount ? '#52c41a' : '#1677ff'"
-                    />
-                    <span class="progress-text">{{ partRow(row).completedOrderCount }}/{{ partRow(row).targetOrderCount }}</span>
-                  </div>
-                </template>
-              </el-table-column>
+
               <el-table-column label="领取状态" width="100" align="center">
                 <template #default="{ row }">
                   <el-tag
