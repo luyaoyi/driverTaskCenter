@@ -812,6 +812,16 @@
                 <el-radio value="newbie_task">新手任务</el-radio>
               </el-radio-group>
             </el-form-item>
+            <el-form-item label="展示顺序" required>
+              <el-input-number
+                v-model="cfgForm.displayOrder"
+                :min="1" :max="99" :step="1" :precision="0"
+                controls-position="right"
+              />
+              <span style="color:#8a8f98;font-size:12px;margin-left:8px">
+                数值越小，排序越高（范围 1～99，正整数）
+              </span>
+            </el-form-item>
             <el-form-item label="任务角标">
               <el-input
                 v-model="cfgForm.taskBadge"
@@ -1063,6 +1073,7 @@ interface TaskCfgRow {
   taskIcon: string
   taskBadge: string
   taskTag: '' | 'newbie_task'
+  displayOrder: number
   createTime: string
 }
 
@@ -1205,6 +1216,7 @@ const cfgTable = ref<TaskCfgRow[]>([
     rewardDesc: '满足条件可领取价值 18 元的券包奖励。',
     taskIcon: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=%E7%BA%A2%E8%89%B2%E7%8E%B0%E9%87%91%E7%BA%A2%E5%8C%85%E9%87%91%E5%B8%81%E5%9B%BE%E6%A0%87%20%E7%BD%91%E7%BA%A6%E8%BD%A6%E5%8F%B8%E6%9C%BA%E4%BB%BB%E5%8A%A1%E5%A5%96%E5%8A%B1%20%E7%AE%80%E7%BA%A6%E6%89%81%E5%B9%B3%E9%A3%8E%E6%A0%BC&image_size=square_hd',
     taskBadge: '限时', taskTag: '',
+    displayOrder: 10,
     createTime: '2026-07-01 10:23:45',
   },
   {
@@ -1234,6 +1246,7 @@ const cfgTable = ref<TaskCfgRow[]>([
     rewardDesc: '现金奖励 20 元，完成即可发起提现。',
     taskIcon: '',
     taskBadge: '新人专享', taskTag: 'newbie_task',
+    displayOrder: 20,
     createTime: '2026-07-02 14:11:02',
   },
   {
@@ -1263,6 +1276,7 @@ const cfgTable = ref<TaskCfgRow[]>([
     rewardDesc: '价值 15 元券包 1 份；券包实时发放。',
     taskIcon: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=%E7%BB%BF%E8%89%B2%E6%B1%BD%E8%BD%A6%E8%BD%A6%E9%80%9F%E8%A1%A8%E7%AE%AD%E5%A4%B4%E5%90%91%E4%B8%8A%20%E6%8E%A5%E5%8D%95%E7%8E%87%E6%8F%90%E5%8D%87%E5%9B%BE%E6%A0%87%20%E7%AE%80%E7%BA%A6%E6%89%81%E5%B9%B3%E7%99%BD%E5%BA%95&image_size=square_hd',
     taskBadge: '每日必做', taskTag: '',
+    displayOrder: 30,
     createTime: '2026-07-08 09:40:11',
   },
   {
@@ -1293,6 +1307,7 @@ const cfgTable = ref<TaskCfgRow[]>([
     rewardDesc: '现金奖励 15 元，完成即可发起提现。',
     taskIcon: '',
     taskBadge: '回归专属', taskTag: '',
+    displayOrder: 40,
     createTime: '2026-07-08 16:05:20',
   },
   {
@@ -1322,6 +1337,7 @@ const cfgTable = ref<TaskCfgRow[]>([
     rewardDesc: '奖励：定制行李箱贴纸套装；以实物发货为准。',
     taskIcon: '',
     taskBadge: '', taskTag: '',
+    displayOrder: 50,
     createTime: '2026-06-15 11:30:00',
   },
   {
@@ -1350,6 +1366,7 @@ const cfgTable = ref<TaskCfgRow[]>([
     rewardDesc: '现金奖励 50 元 + 专属"服务之星"电子徽章，次月 5 日前统一发放。',
     taskIcon: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=%E9%87%91%E8%89%B2%E4%BA%94%E8%A7%92%E6%98%9F%E5%A5%96%E7%AB%A0%E4%B8%9D%E5%B8%A6%20%E6%9C%8D%E5%8A%A1%E4%B9%8B%E6%98%9F%E8%8D%A3%E8%AA%89%E5%9B%BE%E6%A0%87%20%E7%AE%80%E7%BA%A6%E6%89%81%E5%B9%B3%E7%99%BD%E5%BA%95&image_size=square_hd',
     taskBadge: '专属荣誉', taskTag: '',
+    displayOrder: 60,
     createTime: '2026-07-05 08:20:15',
   },
   {
@@ -1378,6 +1395,7 @@ const cfgTable = ref<TaskCfgRow[]>([
     rewardDesc: '领取即可获得 3 元停车券或洗车券，当日有效。',
     taskIcon: '',
     taskBadge: '每日基础', taskTag: '',
+    displayOrder: 70,
     createTime: '2026-07-09 20:00:00',
   },
   {
@@ -1407,6 +1425,7 @@ const cfgTable = ref<TaskCfgRow[]>([
     rewardDesc: '激活奖励：价值 12 元的券包。',
     taskIcon: '',
     taskBadge: '专属激活', taskTag: '',
+    displayOrder: 80,
     createTime: '2026-07-10 09:30:00',
   },
 ])
@@ -1473,6 +1492,7 @@ interface CfgForm {
   taskIcon: string
   taskBadge: string
   taskTag: '' | 'newbie_task'
+  displayOrder: number
 }
 const cfgForm = reactive<CfgForm>({
   activityName: '', taskStatus: 'valid', configStatus: 'published',
@@ -1495,6 +1515,7 @@ const cfgForm = reactive<CfgForm>({
   taskTitle: '', taskSubtitle: '', taskDesc: '', rewardDesc: '',
   taskIcon: '', taskBadge: '',
   taskTag: '',
+  displayOrder: 50,
 })
 
 function resetCfgForm() {
@@ -1519,6 +1540,7 @@ function resetCfgForm() {
     taskTitle: '', taskSubtitle: '', taskDesc: '', rewardDesc: '',
     taskIcon: '', taskBadge: '',
     taskTag: '',
+    displayOrder: 50,
   } as CfgForm)
   taskIconFileList.value = []
 }
@@ -1564,6 +1586,7 @@ function fillCfgFormFromRow(row: TaskCfgRow) {
     taskIcon: row.taskIcon,
     taskBadge: row.taskBadge,
     taskTag: row.taskTag,
+    displayOrder: row.displayOrder,
   } as CfgForm)
   if (row.taskIcon) {
     taskIconFileList.value = [{ name: 'taskIcon.png', url: row.taskIcon } as any]
@@ -1600,6 +1623,9 @@ function validateCfg(draft: boolean) {
       }
     }
     if (!cfgForm.taskTitle.trim()) { ElMessage.warning('请填写任务标题（前端展示）'); return false }
+    if (!cfgForm.displayOrder || cfgForm.displayOrder < 1 || cfgForm.displayOrder > 99) {
+      ElMessage.warning('展示顺序需在1～99之间的正整数'); return false
+    }
   }
   return true
 }
@@ -1652,6 +1678,7 @@ function makeCfgRowFromForm(): TaskCfgRow {
     taskIcon: cfgForm.taskIcon,
     taskBadge: cfgForm.taskBadge,
     taskTag: cfgForm.taskTag,
+    displayOrder: cfgForm.displayOrder,
     createTime: now.toISOString().slice(0, 19).replace('T', ' '),
   }
 }
