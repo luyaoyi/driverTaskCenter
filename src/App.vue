@@ -284,18 +284,39 @@
               <el-table-column label="任务目标" min-width="170">
                 <template #default="{ row }">
                   <div>
-                    <span>完单 {{ taskCfgRow(row).targetOrderCount }} 单</span>
-                    <div v-if="taskCfgRow(row).hasDriverMetric" style="color:#8a8f98;font-size:12px">
-                      + {{ metricLabel(taskCfgRow(row).metricType) }} ≥ {{ taskCfgRow(row).metricThreshold }}%
-                    </div>
+                    <template v-if="taskCfgRow(row).taskType === 'finish_order'">
+                      <span>完单 {{ taskCfgRow(row).targetOrderCount }} 单</span>
+                      <div v-if="taskCfgRow(row).hasDriverMetric" style="color:#8a8f98;font-size:12px">
+                        + {{ metricLabel(taskCfgRow(row).metricType) }} ≥ {{ taskCfgRow(row).metricThreshold }}%
+                      </div>
+                    </template>
+                    <template v-else-if="taskCfgRow(row).taskType === 'publish_trip'">
+                      <span>发布行程任务</span>
+                    </template>
+                    <template v-else>
+                      <span>添加线路任务</span>
+                    </template>
                   </div>
                 </template>
               </el-table-column>
               <el-table-column label="奖励类型" width="150">
                 <template #default="{ row }">
                   <el-tag
-                    v-if="taskCfgRow(row).rewardTypes.includes('normal')"
+                    v-if="taskCfgRow(row).rewardType === 'normal'"
                     type="success" effect="light" size="small">普通奖品</el-tag>
+                  <el-tag
+                    v-else
+                    type="danger" effect="light" size="small">
+                    现金 ¥{{ taskCfgRow(row).cashAmount }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="任务标签" width="100">
+                <template #default="{ row }">
+                  <el-tag
+                    v-if="taskCfgRow(row).taskTag === 'newbie_task'"
+                    type="warning" effect="light" size="small">新手任务</el-tag>
+                  <span v-else style="color:#c0c4cc">-</span>
                 </template>
               </el-table-column>
               <el-table-column prop="createTime" label="更新时间" width="170" />
@@ -373,6 +394,13 @@
               <el-table-column
                 prop="participationId" label="参与记录ID" width="190" show-overflow-tooltip
               />
+              <el-table-column label="任务类型" width="100" align="center">
+                <template #default="{ row }">
+                  <el-tag type="info" effect="plain" size="small">
+                    {{ taskTypeLabel(partRow(row).taskType) }}
+                  </el-tag>
+                </template>
+              </el-table-column>
 
               <el-table-column label="领取状态" width="100" align="center">
                 <template #default="{ row }">
@@ -380,6 +408,28 @@
                     :type="claimStatusTagType(partRow(row).claimStatus)"
                     effect="light" size="small"
                   >{{ claimStatusLabel(partRow(row).claimStatus) }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="奖励发放" width="180" align="center">
+                <template #default="{ row }">
+                  <template v-if="partRow(row).rewardType === 'normal'">
+                    <el-tag
+                      :type="partRow(row).prizeResult === 'success' ? 'success' : partRow(row).prizeResult === 'fail' ? 'danger' : 'info'"
+                      effect="light" size="small"
+                    >{{ issueLabel(partRow(row).prizeResult) }}</el-tag>
+                  </template>
+                  <template v-else>
+                    <div style="display:flex;flex-direction:column;gap:4px;align-items:center">
+                      <el-tag
+                        :type="(partRow(row).cashResult || 'none') === 'success' ? 'success' : (partRow(row).cashResult || 'none') === 'fail' ? 'danger' : 'info'"
+                        effect="light" size="small"
+                      >发放：{{ issueLabel(partRow(row).cashResult || 'none') }}</el-tag>
+                      <el-tag
+                        :type="cashPayStatusTagType(partRow(row).cashPayStatus || 'none')"
+                        effect="light" size="small"
+                      >打款：{{ cashPayStatusLabel(partRow(row).cashPayStatus || 'none') }}</el-tag>
+                    </div>
+                  </template>
                 </template>
               </el-table-column>
               <el-table-column label="操作" width="90" fixed="right">
@@ -498,7 +548,7 @@
         <div class="form-section">
           <div class="form-section-title">
             投放限制
-            <span class="sub-desc">按司机接单数量、会员卡、司机标签、先知人群、AB实验过滤投放命中</span>
+            <span class="sub-desc">按司机接单数量、会员卡、司机标签、司机状态、先知人群、AB实验过滤投放命中</span>
           </div>
           <el-form
             :model="cfgForm"
@@ -550,6 +600,15 @@
                 <el-option label="高活跃司机" value="high_active" />
                 <el-option label="低活跃司机" value="low_active" />
               </el-select>
+            </el-form-item>
+            <el-form-item label="启用司机状态限制">
+              <el-switch v-model="cfgForm.enableDriverStatusLimit" />
+            </el-form-item>
+            <el-form-item v-if="cfgForm.enableDriverStatusLimit" label="司机状态条件" required>
+              <el-radio-group v-model="cfgForm.driverStatusCondition">
+                <el-radio value="no_trip_published">认证未发布行程</el-radio>
+                <el-radio value="no_route_added">认证未添加线路</el-radio>
+              </el-radio-group>
             </el-form-item>
             <el-form-item label="启用先知人群限制">
               <el-switch v-model="cfgForm.enableCrowdLimit" />
@@ -611,7 +670,7 @@
             label-width="150px" label-position="right"
           >
             <el-form-item label="任务周期" required>
-              <el-radio-group v-model="cfgForm.cycleType">
+              <el-radio-group v-model="cfgForm.cycleType" @change="onCycleTypeChange">
                 <el-radio value="once">一次性任务</el-radio>
                 <el-radio value="cycle">冷却周期型任务</el-radio>
               </el-radio-group>
@@ -625,38 +684,59 @@
               </div>
             </el-form-item>
             <el-form-item label="任务类型" required>
-              <el-select v-model="cfgForm.taskType" style="width:200px">
+              <el-select v-model="cfgForm.taskType" style="width:200px" @change="onTaskTypeChange">
                 <el-option label="完单任务" value="finish_order" />
+                <el-option
+                  v-if="cfgForm.cycleType === 'once'"
+                  label="发布行程任务" value="publish_trip"
+                />
+                <el-option
+                  v-if="cfgForm.cycleType === 'once'"
+                  label="添加线路任务" value="add_route"
+                />
               </el-select>
             </el-form-item>
-            <el-form-item label="完成订单数" required>
-              <el-input-number
-                v-model="cfgForm.targetOrderCount"
-                :min="1" :max="9999" controls-position="right"
-              />
-            </el-form-item>
-            <el-form-item label="是否关联司机指标" required>
-              <el-switch v-model="cfgForm.hasDriverMetric" />
-            </el-form-item>
-            <template v-if="cfgForm.hasDriverMetric">
-              <el-form-item label="指标类型" required>
-                <el-select v-model="cfgForm.metricType" style="width:200px">
-                  <el-option label="接完率" value="finish_rate" />
-                  <el-option label="接单率" value="accept_rate" />
-                  <el-option label="服务评分" value="service_score" />
-                </el-select>
-              </el-form-item>
-              <el-form-item label="指标数值限制" required>
+            <!-- 完单任务：完成订单数 + 司机指标 -->
+            <template v-if="cfgForm.taskType === 'finish_order'">
+              <el-form-item label="完成订单数" required>
                 <el-input-number
-                  v-model="cfgForm.metricThreshold"
-                  :min="0" :max="100" :precision="2" :step="0.5" controls-position="right"
+                  v-model="cfgForm.targetOrderCount"
+                  :min="1" :max="9999" controls-position="right"
                 />
-                <span style="margin-left:8px;color:#606266">%</span>
-                <div style="color:#8a8f98;font-size:12px;margin-top:4px">
-                  判定规则：实时指标 ≥ 阈值 视为达标
-                </div>
               </el-form-item>
+              <el-form-item label="是否关联司机指标" required>
+                <el-switch v-model="cfgForm.hasDriverMetric" />
+              </el-form-item>
+              <template v-if="cfgForm.hasDriverMetric">
+                <el-form-item label="指标类型" required>
+                  <el-select v-model="cfgForm.metricType" style="width:200px">
+                    <el-option label="接完率" value="finish_rate" />
+                    <el-option label="接单率" value="accept_rate" />
+                    <el-option label="服务评分" value="service_score" />
+                  </el-select>
+                </el-form-item>
+                <el-form-item label="指标数值限制" required>
+                  <el-input-number
+                    v-model="cfgForm.metricThreshold"
+                    :min="0" :max="100" :precision="2" :step="0.5" controls-position="right"
+                  />
+                  <span style="margin-left:8px;color:#606266">%</span>
+                  <div style="color:#8a8f98;font-size:12px;margin-top:4px">
+                    判定规则：实时指标 ≥ 阈值 视为达标
+                  </div>
+                </el-form-item>
+              </template>
             </template>
+            <!-- 发布行程任务 / 添加线路任务：是否完成首单领取（默认开，不可修改） -->
+            <el-form-item
+              v-if="cfgForm.taskType === 'publish_trip' || cfgForm.taskType === 'add_route'"
+              label="是否完成首单领取"
+            >
+              <el-switch v-model="cfgForm.firstOrderClaim" disabled />
+              <span style="color:#8a8f98;font-size:12px;margin-left:8px">
+                默认开启，司机完成首单即可领取奖励
+              </span>
+            </el-form-item>
           </el-form>
         </div>
 
@@ -672,12 +752,22 @@
             label-width="150px" label-position="right"
           >
             <el-form-item label="奖励类型" required>
-              <el-checkbox-group v-model="cfgForm.rewardTypes">
-                <el-checkbox value="normal">普通奖品（营销平台领取工具）</el-checkbox>
-              </el-checkbox-group>
+              <el-radio-group v-model="cfgForm.rewardType">
+                <el-radio value="normal">普通奖品（营销平台领取工具）</el-radio>
+                <el-radio
+                  value="cash"
+                  :disabled="cfgForm.taskType === 'finish_order'"
+                >
+                  现金奖励
+                  <span
+                    v-if="cfgForm.taskType === 'finish_order'"
+                    style="color:#c0c4cc;font-size:12px;font-weight:normal"
+                  >（仅发布行程/添加线路任务支持）</span>
+                </el-radio>
+              </el-radio-group>
             </el-form-item>
             <el-form-item
-              v-if="cfgForm.rewardTypes.includes('normal')"
+              v-if="cfgForm.rewardType === 'normal'"
               label="普通奖励领取code" required
             >
               <el-input
@@ -685,6 +775,22 @@
                 placeholder="关联营销平台普通奖励领取 code"
               />
             </el-form-item>
+            <template v-if="cfgForm.rewardType === 'cash'">
+              <el-form-item label="奖励金额" required>
+                <el-input-number
+                  v-model="cfgForm.cashAmount"
+                  :min="1" :max="100" :step="1" :precision="0"
+                  controls-position="right"
+                />
+                <span style="color:#8a8f98;font-size:12px;margin-left:8px">元，仅支持1～100的正整数</span>
+              </el-form-item>
+              <el-form-item label="现金奖励code" required>
+                <el-input
+                  v-model="cfgForm.cashCode"
+                  placeholder="关联现金奖励发放 code"
+                />
+              </el-form-item>
+            </template>
           </el-form>
         </div>
 
@@ -722,6 +828,12 @@
                 <el-icon><Plus /></el-icon>
               </el-upload>
               <div style="color:#8a8f98;font-size:12px;margin-top:4px">选填；仅允许上传一张图片，建议尺寸 120×120，JPG/PNG 格式</div>
+            </el-form-item>
+            <el-form-item label="任务标签">
+              <el-radio-group v-model="cfgForm.taskTag">
+                <el-radio value="">无</el-radio>
+                <el-radio value="newbie_task">新手任务</el-radio>
+              </el-radio-group>
             </el-form-item>
             <el-form-item label="任务角标">
               <el-input
@@ -788,6 +900,11 @@
           <el-descriptions-item label="任务标题">
             {{ partRow(partDrawer.data).taskTitle }}
           </el-descriptions-item>
+          <el-descriptions-item label="任务类型">
+            <el-tag type="info" effect="plain" size="small">
+              {{ taskTypeLabel(partRow(partDrawer.data).taskType) }}
+            </el-tag>
+          </el-descriptions-item>
           <el-descriptions-item label="用户任务状态">
             <el-tag
               :type="userTaskStatusTagType(partRow(partDrawer.data).userTaskStatus)"
@@ -826,14 +943,14 @@
         </el-descriptions>
 
         <!-- 奖励信息：每种奖励单独卡片呈现 -->
-        <div v-if="partRow(partDrawer.data).rewardTypes.length" style="margin-top: 24px">
+        <div v-if="partRow(partDrawer.data).rewardType" style="margin-top: 24px">
           <div style="display:flex;align-items:center;margin-bottom:12px;font-weight:600;color:#333;font-size:15px">
             <span style="width:3px;height:14px;background:#1677ff;margin-right:8px;display:inline-block;border-radius:2px"></span>
             奖励信息
           </div>
           <div style="display:flex;flex-direction:column;gap:12px">
             <div
-              v-if="partRow(partDrawer.data).rewardTypes.includes('normal')"
+              v-if="partRow(partDrawer.data).rewardType === 'normal'"
               style="border:1px solid #c7e8b7;border-radius:8px;padding:16px 20px;background:#f6ffed">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
                 <el-tag type="success" effect="light">普通奖品</el-tag>
@@ -853,8 +970,47 @@
                 v-if="partRow(partDrawer.data).prizeResult === 'fail'"
                 style="margin-top:14px;display:flex;justify-content:flex-end"
               >
-                <el-button size="small" type="success" plain @click="onRetryIssueByType()">
+                <el-button size="small" type="success" plain @click="onRetryIssueByType('normal')">
                   <el-icon style="margin-right:4px"><Refresh /></el-icon>重试奖品发放
+                </el-button>
+              </div>
+            </div>
+            <div
+              v-if="partRow(partDrawer.data).rewardType === 'cash'"
+              style="border:1px solid #ffe58f;border-radius:8px;padding:16px 20px;background:#fffbe6">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                <el-tag type="danger" effect="light">现金奖励</el-tag>
+                <div style="display:flex;gap:8px">
+                  <el-tag
+                    :type="
+                      (partRow(partDrawer.data).cashResult || 'none') === 'success' ? 'success'
+                        : (partRow(partDrawer.data).cashResult || 'none') === 'fail' ? 'danger' : 'info'
+                    "
+                    size="small"
+                  >发放：{{ issueLabel(partRow(partDrawer.data).cashResult || 'none') }}</el-tag>
+                  <el-tag
+                    :type="cashPayStatusTagType(partRow(partDrawer.data).cashPayStatus || 'none')"
+                    size="small"
+                  >打款：{{ cashPayStatusLabel(partRow(partDrawer.data).cashPayStatus || 'none') }}</el-tag>
+                </div>
+              </div>
+              <div style="font-size:13px;color:#595959;display:flex;flex-direction:column;gap:8px">
+                <div>
+                  <span style="color:#8a8f98">奖励金额：</span>
+                  <b style="color:#f5222d;font-size:16px">¥{{ partRow(partDrawer.data).cashAmount || 0 }}</b>
+                  <span style="color:#8a8f98;margin-left:4px">元</span>
+                </div>
+                <div>
+                  <span style="color:#8a8f98">现金奖励 Code：</span>
+                  <code>{{ partRow(partDrawer.data).cashCode || '-' }}</code>
+                </div>
+              </div>
+              <div
+                v-if="(partRow(partDrawer.data).cashResult || 'none') === 'fail'"
+                style="margin-top:14px;display:flex;justify-content:flex-end"
+              >
+                <el-button size="small" type="warning" plain @click="onRetryIssueByType('cash')">
+                  <el-icon style="margin-right:4px"><Refresh /></el-icon>重试现金发放
                 </el-button>
               </div>
             </div>
@@ -877,6 +1033,15 @@ type TaskStatus = 'valid' | 'invalid'
 type CycleType = 'once' | 'cycle'
 type MetricType = 'finish_rate' | 'accept_rate' | 'service_score'
 
+/* 行程发布条目（仅一次性任务支持） */
+interface TripItem {
+  tripId: string
+  origin: string
+  destination: string
+  departureTime: string
+  requiredTrips: number
+}
+
 /* ------- 任务配置 ------- */
 interface TaskCfgRow {
   key: string
@@ -893,6 +1058,8 @@ interface TaskCfgRow {
   memberCardCondition: 'no_gift' | 'no_purchase' | 'no_both'
   enableDriverTags: boolean
   driverTags: string[]
+  enableDriverStatusLimit: boolean
+  driverStatusCondition: 'no_trip_published' | 'no_route_added'
   enableCrowdLimit: boolean
   crowdCodes: string[]
   enableAbLimit: boolean
@@ -900,19 +1067,25 @@ interface TaskCfgRow {
   abGroups: string[]
   cycleType: CycleType
   cooldownDays: number
-  taskType: 'finish_order'
+  taskType: 'finish_order' | 'publish_trip' | 'add_route'
   targetOrderCount: number
+  trips: TripItem[]
+  commonRoutes: string[]
+  firstOrderClaim: boolean
   hasDriverMetric: boolean
   metricType: MetricType
   metricThreshold: number
-  rewardTypes: 'normal'[]
+  rewardType: 'normal' | 'cash'
   normalRewardCode: string
+  cashAmount: number
+  cashCode: string
   taskTitle: string
   taskSubtitle: string
   taskDesc: string
   rewardDesc: string
   taskIcon: string
   taskBadge: string
+  taskTag: '' | 'newbie_task'
   createTime: string
 }
 
@@ -920,6 +1093,7 @@ interface TaskCfgRow {
 type UserTaskStatus = 'progress' | 'claimable' | 'claimed' | 'expired' | 'cooldown'
 type ClaimStatus = 'unclaimed' | 'success' | 'partial' | 'fail'
 type IssueResult = 'none' | 'success' | 'fail'
+type CashPayStatus = 'none' | 'pending' | 'success' | 'fail'
 interface PartRow {
   key: string
   driverId: string
@@ -927,6 +1101,7 @@ interface PartRow {
   taskId: string
   participationId: string
   taskTitle: string
+  taskType: 'finish_order' | 'publish_trip' | 'add_route'
   userTaskStatus: UserTaskStatus
   completedOrderCount: number
   targetOrderCount: number
@@ -935,9 +1110,13 @@ interface PartRow {
   metricThreshold: number
   driverMetricValue: number
   claimStatus: ClaimStatus
-  rewardTypes: 'normal'[]
+  rewardType: 'normal' | 'cash'
   prizeResult: IssueResult
   prizeRewardCode?: string
+  cashAmount?: number
+  cashCode?: string
+  cashResult?: IssueResult
+  cashPayStatus?: CashPayStatus
   cycleStartTime: string
   claimTime?: string
 }
@@ -994,6 +1173,15 @@ function claimStatusTagType(s: ClaimStatus) {
 function issueLabel(r: IssueResult) {
   return r === 'success' ? '已发放' : r === 'fail' ? '发放失败' : '未发起'
 }
+function taskTypeLabel(t: 'finish_order' | 'publish_trip' | 'add_route') {
+  return t === 'finish_order' ? '完单任务' : t === 'publish_trip' ? '发布行程' : '添加线路'
+}
+function cashPayStatusLabel(s: CashPayStatus) {
+  return ({ none: '未发起', pending: '打款中', success: '打款成功', fail: '打款失败' } as const)[s]
+}
+function cashPayStatusTagType(s: CashPayStatus) {
+  return ({ none: 'info', pending: 'warning', success: 'success', fail: 'danger' } as const)[s]
+}
 function tableRowClassName({ rowIndex }: { rowIndex: number }) {
   return rowIndex % 2 === 1 ? 'row-alt' : ''
 }
@@ -1023,19 +1211,23 @@ const cfgTable = ref<TaskCfgRow[]>([
     enableOrderLimit: true, minOrderCount: 100,
     enableMemberCardLimit: false, memberCardCondition: 'no_both',
     enableDriverTags: true, driverTags: ['high_active'],
+    enableDriverStatusLimit: false, driverStatusCondition: 'no_trip_published',
     enableCrowdLimit: true, crowdCodes: ['high_active_driver'],
     enableAbLimit: false, abExpId: '', abGroups: [],
     cycleType: 'cycle', cooldownDays: 7,
     taskType: 'finish_order', targetOrderCount: 30,
+    trips: [], commonRoutes: [],
+    firstOrderClaim: false,
     hasDriverMetric: true, metricType: 'finish_rate', metricThreshold: 75,
-    rewardTypes: ['normal'],
+    rewardType: 'normal',
     normalRewardCode: 'PRIZE_TASK_0001',
+    cashAmount: 0, cashCode: '',
     taskTitle: '本周完成30单，领取奖励',
     taskSubtitle: '接完率≥75%',
     taskDesc: '每周累计完成30个订单且周内接完率≥75%即可领取奖励。',
     rewardDesc: '满足条件可领取价值 18 元的券包奖励。',
     taskIcon: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=%E7%BA%A2%E8%89%B2%E7%8E%B0%E9%87%91%E7%BA%A2%E5%8C%85%E9%87%91%E5%B8%81%E5%9B%BE%E6%A0%87%20%E7%BD%91%E7%BA%A6%E8%BD%A6%E5%8F%B8%E6%9C%BA%E4%BB%BB%E5%8A%A1%E5%A5%96%E5%8A%B1%20%E7%AE%80%E7%BA%A6%E6%89%81%E5%B9%B3%E9%A3%8E%E6%A0%BC&image_size=square_hd',
-    taskBadge: '限时冲刺',
+    taskBadge: '限时', taskTag: '',
     createTime: '2026-07-01 10:23:45',
   },
   {
@@ -1047,19 +1239,24 @@ const cfgTable = ref<TaskCfgRow[]>([
     enableOrderLimit: false, minOrderCount: 0,
     enableMemberCardLimit: true, memberCardCondition: 'no_both',
     enableDriverTags: true, driverTags: ['new_driver'],
+    enableDriverStatusLimit: true, driverStatusCondition: 'no_trip_published',
     enableCrowdLimit: true, crowdCodes: ['new_register_driver'],
     enableAbLimit: false, abExpId: '', abGroups: [],
     cycleType: 'once', cooldownDays: 0,
-    taskType: 'finish_order', targetOrderCount: 20,
+    taskType: 'publish_trip', targetOrderCount: 0,
+    trips: [],
+    commonRoutes: [],
+    firstOrderClaim: true,
     hasDriverMetric: false, metricType: 'finish_rate', metricThreshold: 0,
-    rewardTypes: ['normal'],
-    normalRewardCode: 'PRIZE_NEWDRIVER_002',
+    rewardType: 'cash',
+    normalRewardCode: '',
+    cashAmount: 20, cashCode: 'CASH_NEWDRIVER_002',
     taskTitle: '新人首月完成20单，领取超值券包',
     taskSubtitle: '',
     taskDesc: '新人首月累计完成20单即可领取券包。',
-    rewardDesc: '奖品总价值 36 元，含 1 张加油券 + 2 张洗车券，领后 15 天有效。',
+    rewardDesc: '现金奖励 20 元，完成即可发起提现。',
     taskIcon: '',
-    taskBadge: '新人专享',
+    taskBadge: '新人专享', taskTag: 'newbie_task',
     createTime: '2026-07-02 14:11:02',
   },
   {
@@ -1072,19 +1269,23 @@ const cfgTable = ref<TaskCfgRow[]>([
     enableOrderLimit: false, minOrderCount: 0,
     enableMemberCardLimit: false, memberCardCondition: 'no_both',
     enableDriverTags: true, driverTags: ['low_active'],
+    enableDriverStatusLimit: false, driverStatusCondition: 'no_trip_published',
     enableCrowdLimit: true, crowdCodes: ['low_finish_rate'],
     enableAbLimit: false, abExpId: '', abGroups: [],
     cycleType: 'cycle', cooldownDays: 1,
     taskType: 'finish_order', targetOrderCount: 15,
+    trips: [], commonRoutes: [],
+    firstOrderClaim: false,
     hasDriverMetric: true, metricType: 'accept_rate', metricThreshold: 60,
-    rewardTypes: ['normal'],
+    rewardType: 'normal',
     normalRewardCode: 'PRIZE_TASK_0003',
+    cashAmount: 0, cashCode: '',
     taskTitle: '每日完成15单 + 接单率≥60% 领奖励',
     taskSubtitle: '',
     taskDesc: '每日完成15单并保持接单率≥60%可领取奖励。',
     rewardDesc: '价值 15 元券包 1 份；券包实时发放。',
     taskIcon: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=%E7%BB%BF%E8%89%B2%E6%B1%BD%E8%BD%A6%E8%BD%A6%E9%80%9F%E8%A1%A8%E7%AE%AD%E5%A4%B4%E5%90%91%E4%B8%8A%20%E6%8E%A5%E5%8D%95%E7%8E%87%E6%8F%90%E5%8D%87%E5%9B%BE%E6%A0%87%20%E7%AE%80%E7%BA%A6%E6%89%81%E5%B9%B3%E7%99%BD%E5%BA%95&image_size=square_hd',
-    taskBadge: '每日必做',
+    taskBadge: '每日必做', taskTag: '',
     createTime: '2026-07-08 09:40:11',
   },
   {
@@ -1097,19 +1298,24 @@ const cfgTable = ref<TaskCfgRow[]>([
     enableOrderLimit: false, minOrderCount: 0,
     enableMemberCardLimit: false, memberCardCondition: 'no_both',
     enableDriverTags: false, driverTags: [],
+    enableDriverStatusLimit: true, driverStatusCondition: 'no_route_added',
     enableCrowdLimit: true, crowdCodes: ['return_driver'],
     enableAbLimit: false, abExpId: '', abGroups: [],
     cycleType: 'once', cooldownDays: 0,
-    taskType: 'finish_order', targetOrderCount: 10,
-    hasDriverMetric: true, metricType: 'finish_rate', metricThreshold: 70,
-    rewardTypes: ['normal'],
-    normalRewardCode: 'PRIZE_CALLBACK_004',
+    taskType: 'add_route', targetOrderCount: 0,
+    trips: [],
+    commonRoutes: [],
+    firstOrderClaim: true,
+    hasDriverMetric: false, metricType: 'finish_rate', metricThreshold: 0,
+    rewardType: 'cash',
+    normalRewardCode: '',
+    cashAmount: 15, cashCode: 'CASH_CALLBACK_004',
     taskTitle: '回归专属：完成10单领奖励',
     taskSubtitle: '接完率≥70%',
     taskDesc: '召回司机专属，完成10单且接完率≥70%可领奖励。',
-    rewardDesc: '价值 20 元的券包奖励，仅限一次。',
+    rewardDesc: '现金奖励 15 元，完成即可发起提现。',
     taskIcon: '',
-    taskBadge: '回归专属',
+    taskBadge: '回归专属', taskTag: '',
     createTime: '2026-07-08 16:05:20',
   },
   {
@@ -1122,19 +1328,23 @@ const cfgTable = ref<TaskCfgRow[]>([
     enableOrderLimit: true, minOrderCount: 200,
     enableMemberCardLimit: false, memberCardCondition: 'no_both',
     enableDriverTags: false, driverTags: [],
+    enableDriverStatusLimit: false, driverStatusCondition: 'no_trip_published',
     enableCrowdLimit: false, crowdCodes: [],
     enableAbLimit: true, abExpId: 'AB_EXP_001', abGroups: ['group_a', 'group_b'],
     cycleType: 'cycle', cooldownDays: 36,
     taskType: 'finish_order', targetOrderCount: 50,
+    trips: [], commonRoutes: [],
+    firstOrderClaim: false,
     hasDriverMetric: true, metricType: 'finish_rate', metricThreshold: 80,
-    rewardTypes: ['normal'],
+    rewardType: 'normal',
     normalRewardCode: 'PRIZE_SPRINT_005',
+    cashAmount: 0, cashCode: '',
     taskTitle: '暑期冲刺50单+接完率80%领大奖',
     taskSubtitle: '',
     taskDesc: '每周期3天，50单+接完率≥80%可得实物奖品。',
     rewardDesc: '奖励：定制行李箱贴纸套装；以实物发货为准。',
     taskIcon: '',
-    taskBadge: '',
+    taskBadge: '', taskTag: '',
     createTime: '2026-06-15 11:30:00',
   },
   {
@@ -1146,19 +1356,23 @@ const cfgTable = ref<TaskCfgRow[]>([
     enableOrderLimit: false, minOrderCount: 0,
     enableMemberCardLimit: false, memberCardCondition: 'no_both',
     enableDriverTags: true, driverTags: ['staff_driver'],
+    enableDriverStatusLimit: false, driverStatusCondition: 'no_trip_published',
     enableCrowdLimit: false, crowdCodes: [],
     enableAbLimit: false, abExpId: '', abGroups: [],
     cycleType: 'cycle', cooldownDays: 30,
     taskType: 'finish_order', targetOrderCount: 100,
+    trips: [], commonRoutes: [],
+    firstOrderClaim: false,
     hasDriverMetric: true, metricType: 'service_score', metricThreshold: 95,
-    rewardTypes: ['normal'],
+    rewardType: 'normal',
     normalRewardCode: 'PRIZE_STAR_006',
+    cashAmount: 0, cashCode: '',
     taskTitle: '月度服务之星·评分达标赢好礼',
     taskSubtitle: '服务评分≥95分',
     taskDesc: '月度完成100单且服务评分≥95即可领取奖品。',
-    rewardDesc: '专属"服务之星"电子徽章 + 50 元油卡券包，次月 5 日前统一发放。',
+    rewardDesc: '价值 50 元券包 + 专属"服务之星"电子徽章，次月 5 日前统一发放。',
     taskIcon: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=%E9%87%91%E8%89%B2%E4%BA%94%E8%A7%92%E6%98%9F%E5%A5%96%E7%AB%A0%E4%B8%9D%E5%B8%A6%20%E6%9C%8D%E5%8A%A1%E4%B9%8B%E6%98%9F%E8%8D%A3%E8%AA%89%E5%9B%BE%E6%A0%87%20%E7%AE%80%E7%BA%A6%E6%89%81%E5%B9%B3%E7%99%BD%E5%BA%95&image_size=square_hd',
-    taskBadge: '专属荣誉',
+    taskBadge: '专属荣誉', taskTag: '',
     createTime: '2026-07-05 08:20:15',
   },
   {
@@ -1170,19 +1384,23 @@ const cfgTable = ref<TaskCfgRow[]>([
     enableOrderLimit: false, minOrderCount: 0,
     enableMemberCardLimit: false, memberCardCondition: 'no_both',
     enableDriverTags: false, driverTags: [],
+    enableDriverStatusLimit: false, driverStatusCondition: 'no_trip_published',
     enableCrowdLimit: false, crowdCodes: [],
     enableAbLimit: false, abExpId: '', abGroups: [],
     cycleType: 'cycle', cooldownDays: 1,
     taskType: 'finish_order', targetOrderCount: 5,
+    trips: [], commonRoutes: [],
+    firstOrderClaim: false,
     hasDriverMetric: false, metricType: 'finish_rate', metricThreshold: 0,
-    rewardTypes: ['normal'],
+    rewardType: 'normal',
     normalRewardCode: 'PRIZE_DAILY_007',
+    cashAmount: 0, cashCode: '',
     taskTitle: '每日完成5单领基础奖励',
     taskSubtitle: '轻松每日达成',
     taskDesc: '每日完成5单即可领取基础奖励。',
     rewardDesc: '领取即可获得 3 元停车券或洗车券，当日有效。',
     taskIcon: '',
-    taskBadge: '每日基础',
+    taskBadge: '每日基础', taskTag: '',
     createTime: '2026-07-09 20:00:00',
   },
   {
@@ -1195,19 +1413,23 @@ const cfgTable = ref<TaskCfgRow[]>([
     enableOrderLimit: false, minOrderCount: 0,
     enableMemberCardLimit: true, memberCardCondition: 'no_gift',
     enableDriverTags: false, driverTags: [],
+    enableDriverStatusLimit: true, driverStatusCondition: 'no_trip_published',
     enableCrowdLimit: true, crowdCodes: ['low_active_driver'],
     enableAbLimit: false, abExpId: '', abGroups: [],
     cycleType: 'once', cooldownDays: 0,
     taskType: 'finish_order', targetOrderCount: 3,
+    trips: [], commonRoutes: [],
+    firstOrderClaim: false,
     hasDriverMetric: false, metricType: 'finish_rate', metricThreshold: 0,
-    rewardTypes: ['normal'],
+    rewardType: 'normal',
     normalRewardCode: 'PRIZE_LOWACT_008',
+    cashAmount: 0, cashCode: '',
     taskTitle: '完成3单激活奖励',
     taskSubtitle: '低活司机专属',
     taskDesc: '3单即可领取激活奖励。',
     rewardDesc: '激活奖励：价值 12 元的券包。',
     taskIcon: '',
-    taskBadge: '专属激活',
+    taskBadge: '专属激活', taskTag: '',
     createTime: '2026-07-10 09:30:00',
   },
 ])
@@ -1246,6 +1468,8 @@ interface CfgForm {
   memberCardCondition: 'no_gift' | 'no_purchase' | 'no_both'
   enableDriverTags: boolean
   driverTags: string[]
+  enableDriverStatusLimit: boolean
+  driverStatusCondition: 'no_trip_published' | 'no_route_added'
   enableCrowdLimit: boolean
   crowdCodes: string[]
   enableAbLimit: boolean
@@ -1253,19 +1477,25 @@ interface CfgForm {
   abGroups: string[]
   cycleType: CycleType
   cooldownDays: number
-  taskType: 'finish_order'
+  taskType: 'finish_order' | 'publish_trip' | 'add_route'
   targetOrderCount: number
+  trips: TripItem[]
+  commonRoutes: string[]
+  firstOrderClaim: boolean
   hasDriverMetric: boolean
   metricType: MetricType
   metricThreshold: number
-  rewardTypes: 'normal'[]
+  rewardType: 'normal' | 'cash'
   normalRewardCode: string
+  cashAmount: number
+  cashCode: string
   taskTitle: string
   taskSubtitle: string
   taskDesc: string
   rewardDesc: string
   taskIcon: string
   taskBadge: string
+  taskTag: '' | 'newbie_task'
 }
 const cfgForm = reactive<CfgForm>({
   activityName: '', taskStatus: 'valid', configStatus: 'published',
@@ -1273,15 +1503,21 @@ const cfgForm = reactive<CfgForm>({
   enableOrderLimit: false, minOrderCount: 0,
   enableMemberCardLimit: false, memberCardCondition: 'no_both',
   enableDriverTags: false, driverTags: [],
+  enableDriverStatusLimit: false, driverStatusCondition: 'no_trip_published',
   enableCrowdLimit: false, crowdCodes: [],
   enableAbLimit: false, abExpId: '', abGroups: [],
   cycleType: 'once', cooldownDays: 7,
   taskType: 'finish_order', targetOrderCount: 10,
+  trips: [], commonRoutes: [],
+  firstOrderClaim: true,
   hasDriverMetric: true, metricType: 'finish_rate', metricThreshold: 75,
-  rewardTypes: ['normal'],
+  rewardType: 'normal',
   normalRewardCode: '',
+  cashAmount: 1,
+  cashCode: '',
   taskTitle: '', taskSubtitle: '', taskDesc: '', rewardDesc: '',
   taskIcon: '', taskBadge: '',
+  taskTag: '',
 })
 
 function resetCfgForm() {
@@ -1291,15 +1527,21 @@ function resetCfgForm() {
     enableOrderLimit: false, minOrderCount: 0,
     enableMemberCardLimit: false, memberCardCondition: 'no_both',
     enableDriverTags: false, driverTags: [],
+    enableDriverStatusLimit: false, driverStatusCondition: 'no_trip_published',
     enableCrowdLimit: false, crowdCodes: [],
     enableAbLimit: false, abExpId: '', abGroups: [],
     cycleType: 'once', cooldownDays: 7,
     taskType: 'finish_order', targetOrderCount: 10,
+    trips: [], commonRoutes: [],
+    firstOrderClaim: true,
     hasDriverMetric: true, metricType: 'finish_rate', metricThreshold: 75,
-    rewardTypes: ['normal'],
+    rewardType: 'normal',
     normalRewardCode: '',
+    cashAmount: 1,
+    cashCode: '',
     taskTitle: '', taskSubtitle: '', taskDesc: '', rewardDesc: '',
     taskIcon: '', taskBadge: '',
+    taskTag: '',
   } as CfgForm)
   taskIconFileList.value = []
 }
@@ -1317,6 +1559,8 @@ function fillCfgFormFromRow(row: TaskCfgRow) {
     memberCardCondition: row.memberCardCondition,
     enableDriverTags: row.enableDriverTags,
     driverTags: [...row.driverTags],
+    enableDriverStatusLimit: row.enableDriverStatusLimit,
+    driverStatusCondition: row.driverStatusCondition,
     enableCrowdLimit: row.enableCrowdLimit,
     crowdCodes: [...row.crowdCodes],
     enableAbLimit: row.enableAbLimit,
@@ -1326,17 +1570,23 @@ function fillCfgFormFromRow(row: TaskCfgRow) {
     cooldownDays: row.cooldownDays,
     taskType: row.taskType,
     targetOrderCount: row.targetOrderCount,
+    trips: row.trips.map((t) => ({ ...t })),
+    commonRoutes: [...row.commonRoutes],
+    firstOrderClaim: row.firstOrderClaim,
     hasDriverMetric: row.hasDriverMetric,
     metricType: row.metricType,
     metricThreshold: row.metricThreshold,
-    rewardTypes: [...row.rewardTypes],
+    rewardType: row.rewardType,
     normalRewardCode: row.normalRewardCode,
+    cashAmount: row.cashAmount,
+    cashCode: row.cashCode,
     taskTitle: row.taskTitle,
     taskSubtitle: row.taskSubtitle,
     taskDesc: row.taskDesc,
     rewardDesc: row.rewardDesc,
     taskIcon: row.taskIcon,
     taskBadge: row.taskBadge,
+    taskTag: row.taskTag,
   } as CfgForm)
   if (row.taskIcon) {
     taskIconFileList.value = [{ name: 'taskIcon.png', url: row.taskIcon } as any]
@@ -1355,15 +1605,25 @@ function validateCfg(draft: boolean) {
     if (cfgForm.cycleType === 'cycle' && (!cfgForm.cooldownDays || cfgForm.cooldownDays <= 0)) {
       ElMessage.warning('冷却周期型任务请设置冷却天数'); return false
     }
-    if (!cfgForm.targetOrderCount || cfgForm.targetOrderCount <= 0) {
+    if (cfgForm.taskType === 'finish_order' && (!cfgForm.targetOrderCount || cfgForm.targetOrderCount <= 0)) {
       ElMessage.warning('请设置完成订单数'); return false
     }
-    if (cfgForm.hasDriverMetric && cfgForm.metricThreshold < 0) {
+    if (cfgForm.taskType === 'finish_order' && cfgForm.hasDriverMetric && cfgForm.metricThreshold < 0) {
       ElMessage.warning('请设置指标阈值'); return false
     }
-    if (cfgForm.rewardTypes.length === 0) { ElMessage.warning('请至少选择一种奖励类型'); return false }
-    if (cfgForm.rewardTypes.includes('normal') && !cfgForm.normalRewardCode.trim()) {
+    if (cfgForm.taskType === 'finish_order' && cfgForm.rewardType === 'cash') {
+      ElMessage.warning('完单任务不支持现金奖励，请选择发布行程或添加线路任务'); return false
+    }
+    if (cfgForm.rewardType === 'normal' && !cfgForm.normalRewardCode.trim()) {
       ElMessage.warning('请填写普通奖励领取 code'); return false
+    }
+    if (cfgForm.rewardType === 'cash') {
+      if (!cfgForm.cashAmount || cfgForm.cashAmount < 1 || cfgForm.cashAmount > 100) {
+        ElMessage.warning('现金奖励金额需在1～100之间的正整数'); return false
+      }
+      if (!cfgForm.cashCode.trim()) {
+        ElMessage.warning('请填写现金奖励 code'); return false
+      }
     }
     if (!cfgForm.taskTitle.trim()) { ElMessage.warning('请填写任务标题（前端展示）'); return false }
   }
@@ -1389,6 +1649,8 @@ function makeCfgRowFromForm(): TaskCfgRow {
     memberCardCondition: cfgForm.memberCardCondition,
     enableDriverTags: cfgForm.enableDriverTags,
     driverTags: [...cfgForm.driverTags],
+    enableDriverStatusLimit: cfgForm.enableDriverStatusLimit,
+    driverStatusCondition: cfgForm.enableDriverStatusLimit ? cfgForm.driverStatusCondition : 'no_trip_published',
     enableCrowdLimit: cfgForm.enableCrowdLimit,
     crowdCodes: [...cfgForm.crowdCodes],
     enableAbLimit: cfgForm.enableAbLimit,
@@ -1396,20 +1658,53 @@ function makeCfgRowFromForm(): TaskCfgRow {
     abGroups: [...cfgForm.abGroups],
     cycleType: cfgForm.cycleType,
     cooldownDays: cfgForm.cycleType === 'cycle' ? cfgForm.cooldownDays : 0,
-    taskType: cfgForm.taskType,
-    targetOrderCount: cfgForm.targetOrderCount,
-    hasDriverMetric: cfgForm.hasDriverMetric,
+    taskType: cfgForm.cycleType === 'once' ? cfgForm.taskType : 'finish_order',
+    targetOrderCount: cfgForm.taskType === 'finish_order' ? cfgForm.targetOrderCount : 0,
+    trips: cfgForm.taskType === 'publish_trip' ? cfgForm.trips.map((t) => ({ ...t })) : [],
+    commonRoutes: cfgForm.taskType === 'add_route' ? [...cfgForm.commonRoutes] : [],
+    firstOrderClaim: cfgForm.taskType === 'publish_trip' || cfgForm.taskType === 'add_route'
+      ? cfgForm.firstOrderClaim : false,
+    hasDriverMetric: cfgForm.taskType === 'finish_order' ? cfgForm.hasDriverMetric : false,
     metricType: cfgForm.metricType,
     metricThreshold: cfgForm.metricThreshold,
-    rewardTypes: [...cfgForm.rewardTypes],
-    normalRewardCode: cfgForm.normalRewardCode,
+    rewardType: cfgForm.rewardType,
+    normalRewardCode: cfgForm.rewardType === 'normal' ? cfgForm.normalRewardCode : '',
+    cashAmount: cfgForm.rewardType === 'cash' ? cfgForm.cashAmount : 0,
+    cashCode: cfgForm.rewardType === 'cash' ? cfgForm.cashCode : '',
     taskTitle: cfgForm.taskTitle,
     taskSubtitle: cfgForm.taskSubtitle,
     taskDesc: cfgForm.taskDesc,
     rewardDesc: cfgForm.rewardDesc,
     taskIcon: cfgForm.taskIcon,
     taskBadge: cfgForm.taskBadge,
+    taskTag: cfgForm.taskTag,
     createTime: now.toISOString().slice(0, 19).replace('T', ' '),
+  }
+}
+
+/* 任务周期切换：选择冷却周期型时清空一次性任务相关配置 */
+function onCycleTypeChange() {
+  if (cfgForm.cycleType === 'cycle') {
+    cfgForm.taskType = 'finish_order'
+    cfgForm.trips = []
+    cfgForm.commonRoutes = []
+    cfgForm.firstOrderClaim = false
+    if (cfgForm.rewardType === 'cash') {
+      cfgForm.rewardType = 'normal'
+      ElMessage.info('冷却周期型任务不支持现金奖励，已切换为普通奖品')
+    }
+  }
+}
+
+/* 任务类型切换：自动维护首单领取默认值 */
+function onTaskTypeChange() {
+  if (cfgForm.taskType === 'publish_trip' || cfgForm.taskType === 'add_route') {
+    cfgForm.firstOrderClaim = true
+    cfgForm.hasDriverMetric = false
+  }
+  if (cfgForm.taskType === 'finish_order' && cfgForm.rewardType === 'cash') {
+    cfgForm.rewardType = 'normal'
+    ElMessage.info('完单任务不支持现金奖励，已切换为普通奖品')
   }
 }
 
@@ -1532,12 +1827,13 @@ const dataTable = ref<PartRow[]>([
     taskId: 'TASK202607090001',
     participationId: 'PART-0710-0001-A1',
     taskTitle: '本周完成30单，领取奖励',
+    taskType: 'finish_order',
     userTaskStatus: 'progress',
     completedOrderCount: 18, targetOrderCount: 30,
     hasDriverMetric: true, metricType: 'finish_rate',
     metricThreshold: 75, driverMetricValue: 72,
     claimStatus: 'unclaimed',
-    rewardTypes: ['normal'], prizeResult: 'none',
+    rewardType: 'normal', prizeResult: 'none',
     cycleStartTime: '2026-07-08 00:00:00',
   },
   {
@@ -1546,12 +1842,13 @@ const dataTable = ref<PartRow[]>([
     taskId: 'TASK202607090001',
     participationId: 'PART-0710-0001-A2',
     taskTitle: '本周完成30单，领取奖励',
+    taskType: 'finish_order',
     userTaskStatus: 'claimable',
     completedOrderCount: 32, targetOrderCount: 30,
     hasDriverMetric: true, metricType: 'finish_rate',
     metricThreshold: 75, driverMetricValue: 78,
     claimStatus: 'unclaimed',
-    rewardTypes: ['normal'], prizeResult: 'none',
+    rewardType: 'normal', prizeResult: 'none',
     cycleStartTime: '2026-07-08 00:00:00',
   },
   {
@@ -1560,13 +1857,15 @@ const dataTable = ref<PartRow[]>([
     taskId: 'TASK202607090002',
     participationId: 'PART-0710-0002-B1',
     taskTitle: '新人首月完成20单，领取超值券包',
+    taskType: 'publish_trip',
     userTaskStatus: 'claimed',
     completedOrderCount: 20, targetOrderCount: 20,
     hasDriverMetric: false, metricType: 'finish_rate',
     metricThreshold: 0, driverMetricValue: 0,
     claimStatus: 'success',
-    rewardTypes: ['normal'], prizeResult: 'success',
-    prizeRewardCode: 'PRIZE_NEWDRIVER_002',
+    rewardType: 'cash', prizeResult: 'none',
+    cashAmount: 20, cashCode: 'CASH_NEWDRIVER_002', cashResult: 'success',
+    cashPayStatus: 'success',
     cycleStartTime: '2026-07-01 00:00:00', claimTime: '2026-07-06 21:05:32',
   },
   {
@@ -1575,12 +1874,13 @@ const dataTable = ref<PartRow[]>([
     taskId: 'TASK202607090003',
     participationId: 'PART-0710-0003-C1',
     taskTitle: '每日完成15单 + 接单率≥60% 领奖励',
+    taskType: 'finish_order',
     userTaskStatus: 'claimable',
     completedOrderCount: 16, targetOrderCount: 15,
     hasDriverMetric: true, metricType: 'accept_rate',
     metricThreshold: 60, driverMetricValue: 64,
     claimStatus: 'unclaimed',
-    rewardTypes: ['normal'], prizeResult: 'none',
+    rewardType: 'normal', prizeResult: 'none',
     cycleStartTime: '2026-07-10 00:00:00',
   },
   {
@@ -1589,12 +1889,13 @@ const dataTable = ref<PartRow[]>([
     taskId: 'TASK202607090003',
     participationId: 'PART-0710-0003-C2',
     taskTitle: '每日完成15单 + 接单率≥60% 领奖励',
+    taskType: 'finish_order',
     userTaskStatus: 'claimed',
     completedOrderCount: 17, targetOrderCount: 15,
     hasDriverMetric: true, metricType: 'accept_rate',
     metricThreshold: 60, driverMetricValue: 66,
     claimStatus: 'fail',
-    rewardTypes: ['normal'], prizeResult: 'fail',
+    rewardType: 'normal', prizeResult: 'fail',
     cycleStartTime: '2026-07-08 00:00:00', claimTime: '2026-07-08 22:11:45',
   },
   {
@@ -1603,12 +1904,13 @@ const dataTable = ref<PartRow[]>([
     taskId: 'TASK202607090001',
     participationId: 'PART-0710-0001-A3',
     taskTitle: '本周完成30单，领取奖励',
+    taskType: 'finish_order',
     userTaskStatus: 'cooldown',
     completedOrderCount: 30, targetOrderCount: 30,
     hasDriverMetric: true, metricType: 'finish_rate',
     metricThreshold: 75, driverMetricValue: 80,
     claimStatus: 'success',
-    rewardTypes: ['normal'], prizeResult: 'success',
+    rewardType: 'normal', prizeResult: 'success',
     cycleStartTime: '2026-07-01 00:00:00', claimTime: '2026-07-07 19:30:10',
   },
   {
@@ -1617,12 +1919,13 @@ const dataTable = ref<PartRow[]>([
     taskId: 'TASK202607090005',
     participationId: 'PART-0710-0005-D1',
     taskTitle: '暑期冲刺50单+接完率80%领大奖',
+    taskType: 'finish_order',
     userTaskStatus: 'expired',
     completedOrderCount: 42, targetOrderCount: 50,
     hasDriverMetric: true, metricType: 'finish_rate',
     metricThreshold: 80, driverMetricValue: 82,
     claimStatus: 'unclaimed',
-    rewardTypes: ['normal'], prizeResult: 'none',
+    rewardType: 'normal', prizeResult: 'none',
     cycleStartTime: '2026-06-20 00:00:00',
   },
   {
@@ -1631,12 +1934,15 @@ const dataTable = ref<PartRow[]>([
     taskId: 'TASK202607090004',
     participationId: 'PART-0710-0004-E1',
     taskTitle: '回归专属：完成10单领奖励',
+    taskType: 'add_route',
     userTaskStatus: 'claimed',
     completedOrderCount: 10, targetOrderCount: 10,
     hasDriverMetric: true, metricType: 'finish_rate',
     metricThreshold: 70, driverMetricValue: 75,
     claimStatus: 'fail',
-    rewardTypes: ['normal'], prizeResult: 'fail',
+    rewardType: 'cash', prizeResult: 'none',
+    cashAmount: 15, cashCode: 'CASH_CALLBACK_004', cashResult: 'fail',
+    cashPayStatus: 'fail',
     cycleStartTime: '2026-07-05 00:00:00', claimTime: '2026-07-09 10:22:05',
   },
   {
@@ -1645,12 +1951,13 @@ const dataTable = ref<PartRow[]>([
     taskId: 'TASK202607090006',
     participationId: 'PART-0710-0006-F1',
     taskTitle: '月度服务之星·评分达标赢好礼',
+    taskType: 'finish_order',
     userTaskStatus: 'progress',
     completedOrderCount: 68, targetOrderCount: 100,
     hasDriverMetric: true, metricType: 'service_score',
     metricThreshold: 95, driverMetricValue: 93,
     claimStatus: 'unclaimed',
-    rewardTypes: ['normal'], prizeResult: 'none',
+    rewardType: 'normal', prizeResult: 'none',
     prizeRewardCode: 'PRIZE_STAR_006',
     cycleStartTime: '2026-07-01 00:00:00',
   },
@@ -1660,12 +1967,13 @@ const dataTable = ref<PartRow[]>([
     taskId: 'TASK20260710008',
     participationId: 'PART-0710-0008-H1',
     taskTitle: '完成3单激活奖励',
+    taskType: 'finish_order',
     userTaskStatus: 'claimable',
     completedOrderCount: 3, targetOrderCount: 3,
     hasDriverMetric: false, metricType: 'finish_rate',
     metricThreshold: 0, driverMetricValue: 0,
     claimStatus: 'unclaimed',
-    rewardTypes: ['normal'], prizeResult: 'none',
+    rewardType: 'normal', prizeResult: 'none',
     cycleStartTime: '2026-07-10 08:00:00',
   },
   {
@@ -1674,14 +1982,32 @@ const dataTable = ref<PartRow[]>([
     taskId: 'TASK20260710007',
     participationId: 'PART-0710-0007-G1',
     taskTitle: '每日完成5单领基础奖励',
+    taskType: 'finish_order',
     userTaskStatus: 'claimed',
     completedOrderCount: 5, targetOrderCount: 5,
     hasDriverMetric: false, metricType: 'finish_rate',
     metricThreshold: 0, driverMetricValue: 0,
     claimStatus: 'success',
-    rewardTypes: ['normal'], prizeResult: 'success',
+    rewardType: 'normal', prizeResult: 'success',
     prizeRewardCode: 'PRIZE_DAILY_007',
     cycleStartTime: '2026-07-09 00:00:00', claimTime: '2026-07-09 22:45:10',
+  },
+  {
+    key: '12', driverId: 'DRV88310012',
+    deliveryTaskRelationId: 'REL-0002-03',
+    taskId: 'TASK202607090002',
+    participationId: 'PART-0710-0002-B2',
+    taskTitle: '新人首月完成20单，领取超值券包',
+    taskType: 'publish_trip',
+    userTaskStatus: 'claimable',
+    completedOrderCount: 19, targetOrderCount: 20,
+    hasDriverMetric: false, metricType: 'finish_rate',
+    metricThreshold: 0, driverMetricValue: 0,
+    claimStatus: 'unclaimed',
+    rewardType: 'cash', prizeResult: 'none',
+    cashAmount: 20, cashCode: 'CASH_NEWDRIVER_002', cashResult: 'none',
+    cashPayStatus: 'none',
+    cycleStartTime: '2026-07-10 00:00:00',
   },
 ])
 
@@ -1723,20 +2049,34 @@ function onViewPart(row: unknown) {
   partDrawer.data = row
   partDrawer.visible = true
 }
-function onRetryIssueByType() {
+function onRetryIssueByType(type: 'normal' | 'cash' = 'normal') {
   if (!partDrawer.data) return
   const r = partRow(partDrawer.data)
-  if (r.prizeResult !== 'fail') { ElMessage.info('普通奖品当前状态无需重试'); return }
-  ElMessageBox.confirm(
-    `对参与记录 ${r.participationId}（mid: ${r.driverId}）的「普通奖品」重新发起发放？`,
-    '重试发放', { type: 'warning' },
-  )
-    .then(() => {
-      r.prizeResult = 'success'
-      r.claimStatus = 'success'
-      ElMessage.success('普通奖品重试发放完成')
-    })
-    .catch(() => {})
+  if (type === 'normal') {
+    if (r.prizeResult !== 'fail') { ElMessage.info('普通奖品当前状态无需重试'); return }
+    ElMessageBox.confirm(
+      `对参与记录 ${r.participationId}（mid: ${r.driverId}）的「普通奖品」重新发起发放？`,
+      '重试发放', { type: 'warning' },
+    )
+      .then(() => {
+        r.prizeResult = 'success'
+        r.claimStatus = 'success'
+        ElMessage.success('普通奖品重试发放完成')
+      })
+      .catch(() => {})
+  } else {
+    if ((r.cashResult || 'none') !== 'fail') { ElMessage.info('现金奖励当前状态无需重试'); return }
+    ElMessageBox.confirm(
+      `对参与记录 ${r.participationId}（mid: ${r.driverId}）的「现金奖励」重新发起发放？`,
+      '重试发放', { type: 'warning' },
+    )
+      .then(() => {
+        r.cashResult = 'success'
+        r.claimStatus = 'success'
+        ElMessage.success('现金奖励重试发放完成')
+      })
+      .catch(() => {})
+  }
 }
 </script>
 
