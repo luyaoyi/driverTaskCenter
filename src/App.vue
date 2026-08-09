@@ -369,7 +369,15 @@
                 v-model="dataFilter.taskId"
                 placeholder="taskId" clearable style="width:170px"
               />
-
+              <span class="filter-label" style="margin-left:8px">任务类型</span>
+              <el-select
+                v-model="dataFilter.taskType"
+                placeholder="全部" clearable style="width:150px"
+              >
+                <el-option label="完单任务" value="finish_order" />
+                <el-option label="发布行程任务" value="publish_trip" />
+                <el-option label="添加线路任务" value="add_route" />
+              </el-select>
             </div>
             <div class="filter-bar" style="margin-top: -8px">
               <el-button type="primary" class="filter-btn" @click="onDataSearch">
@@ -1770,6 +1778,7 @@ function onTaskIconExceed() {
 const dataFilter = reactive({
   driverId: '',
   taskId: '',
+  taskType: undefined as 'finish_order' | 'publish_trip' | 'add_route' | undefined,
   userTaskStatus: undefined as UserTaskStatus | undefined,
   claimStatus: undefined as ClaimStatus | undefined,
 })
@@ -1975,6 +1984,8 @@ const filteredDataTable = computed<PartRow[]>(() => {
       && !row.driverId.toLowerCase().includes(appliedDataFilter.driverId.toLowerCase())) return false
     if (appliedDataFilter.taskId
       && !row.taskId.toLowerCase().includes(appliedDataFilter.taskId.toLowerCase())) return false
+    if (appliedDataFilter.taskType
+      && row.taskType !== appliedDataFilter.taskType) return false
     if (appliedDataFilter.userTaskStatus
       && row.userTaskStatus !== appliedDataFilter.userTaskStatus) return false
     if (appliedDataFilter.claimStatus
@@ -1992,6 +2003,7 @@ function onDataSearch() {
 function onDataReset() {
   dataFilter.driverId = ''
   dataFilter.taskId = ''
+  dataFilter.taskType = undefined
   dataFilter.userTaskStatus = undefined
   dataFilter.claimStatus = undefined
   Object.assign(appliedDataFilter, dataFilter)
