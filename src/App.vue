@@ -410,28 +410,6 @@
                   >{{ claimStatusLabel(partRow(row).claimStatus) }}</el-tag>
                 </template>
               </el-table-column>
-              <el-table-column label="奖励发放" width="180" align="center">
-                <template #default="{ row }">
-                  <template v-if="partRow(row).rewardType === 'normal'">
-                    <el-tag
-                      :type="partRow(row).prizeResult === 'success' ? 'success' : partRow(row).prizeResult === 'fail' ? 'danger' : 'info'"
-                      effect="light" size="small"
-                    >{{ issueLabel(partRow(row).prizeResult) }}</el-tag>
-                  </template>
-                  <template v-else>
-                    <div style="display:flex;flex-direction:column;gap:4px;align-items:center">
-                      <el-tag
-                        :type="(partRow(row).cashResult || 'none') === 'success' ? 'success' : (partRow(row).cashResult || 'none') === 'fail' ? 'danger' : 'info'"
-                        effect="light" size="small"
-                      >发放：{{ issueLabel(partRow(row).cashResult || 'none') }}</el-tag>
-                      <el-tag
-                        :type="cashPayStatusTagType(partRow(row).cashPayStatus || 'none')"
-                        effect="light" size="small"
-                      >打款：{{ cashPayStatusLabel(partRow(row).cashPayStatus || 'none') }}</el-tag>
-                    </div>
-                  </template>
-                </template>
-              </el-table-column>
               <el-table-column label="操作" width="90" fixed="right">
                 <template #default="{ row }">
                   <span class="action-link" @click="onViewPart(row)">详情</span>
