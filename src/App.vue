@@ -754,16 +754,7 @@
             <el-form-item label="奖励类型" required>
               <el-radio-group v-model="cfgForm.rewardType">
                 <el-radio value="normal">普通奖品（营销平台领取工具）</el-radio>
-                <el-radio
-                  value="cash"
-                  :disabled="cfgForm.taskType === 'finish_order'"
-                >
-                  现金奖励
-                  <span
-                    v-if="cfgForm.taskType === 'finish_order'"
-                    style="color:#c0c4cc;font-size:12px;font-weight:normal"
-                  >（仅发布行程/添加线路任务支持）</span>
-                </el-radio>
+                <el-radio value="cash">现金奖励</el-radio>
               </el-radio-group>
             </el-form-item>
             <el-form-item
@@ -1364,13 +1355,13 @@ const cfgTable = ref<TaskCfgRow[]>([
     trips: [], commonRoutes: [],
     firstOrderClaim: false,
     hasDriverMetric: true, metricType: 'service_score', metricThreshold: 95,
-    rewardType: 'normal',
-    normalRewardCode: 'PRIZE_STAR_006',
-    cashAmount: 0, cashCode: '',
+    rewardType: 'cash',
+    normalRewardCode: '',
+    cashAmount: 50, cashCode: 'CASH_STAR_006',
     taskTitle: '月度服务之星·评分达标赢好礼',
     taskSubtitle: '服务评分≥95分',
     taskDesc: '月度完成100单且服务评分≥95即可领取奖品。',
-    rewardDesc: '价值 50 元券包 + 专属"服务之星"电子徽章，次月 5 日前统一发放。',
+    rewardDesc: '现金奖励 50 元 + 专属"服务之星"电子徽章，次月 5 日前统一发放。',
     taskIcon: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=%E9%87%91%E8%89%B2%E4%BA%94%E8%A7%92%E6%98%9F%E5%A5%96%E7%AB%A0%E4%B8%9D%E5%B8%A6%20%E6%9C%8D%E5%8A%A1%E4%B9%8B%E6%98%9F%E8%8D%A3%E8%AA%89%E5%9B%BE%E6%A0%87%20%E7%AE%80%E7%BA%A6%E6%89%81%E5%B9%B3%E7%99%BD%E5%BA%95&image_size=square_hd',
     taskBadge: '专属荣誉', taskTag: '',
     createTime: '2026-07-05 08:20:15',
@@ -1611,9 +1602,6 @@ function validateCfg(draft: boolean) {
     if (cfgForm.taskType === 'finish_order' && cfgForm.hasDriverMetric && cfgForm.metricThreshold < 0) {
       ElMessage.warning('请设置指标阈值'); return false
     }
-    if (cfgForm.taskType === 'finish_order' && cfgForm.rewardType === 'cash') {
-      ElMessage.warning('完单任务不支持现金奖励，请选择发布行程或添加线路任务'); return false
-    }
     if (cfgForm.rewardType === 'normal' && !cfgForm.normalRewardCode.trim()) {
       ElMessage.warning('请填写普通奖励领取 code'); return false
     }
@@ -1689,10 +1677,6 @@ function onCycleTypeChange() {
     cfgForm.trips = []
     cfgForm.commonRoutes = []
     cfgForm.firstOrderClaim = false
-    if (cfgForm.rewardType === 'cash') {
-      cfgForm.rewardType = 'normal'
-      ElMessage.info('冷却周期型任务不支持现金奖励，已切换为普通奖品')
-    }
   }
 }
 
@@ -1701,10 +1685,6 @@ function onTaskTypeChange() {
   if (cfgForm.taskType === 'publish_trip' || cfgForm.taskType === 'add_route') {
     cfgForm.firstOrderClaim = true
     cfgForm.hasDriverMetric = false
-  }
-  if (cfgForm.taskType === 'finish_order' && cfgForm.rewardType === 'cash') {
-    cfgForm.rewardType = 'normal'
-    ElMessage.info('完单任务不支持现金奖励，已切换为普通奖品')
   }
 }
 
@@ -1957,8 +1937,8 @@ const dataTable = ref<PartRow[]>([
     hasDriverMetric: true, metricType: 'service_score',
     metricThreshold: 95, driverMetricValue: 93,
     claimStatus: 'unclaimed',
-    rewardType: 'normal', prizeResult: 'none',
-    prizeRewardCode: 'PRIZE_STAR_006',
+    rewardType: 'cash', prizeResult: 'none',
+    cashAmount: 50, cashCode: 'CASH_STAR_006', cashResult: 'none', cashPayStatus: 'pending',
     cycleStartTime: '2026-07-01 00:00:00',
   },
   {
