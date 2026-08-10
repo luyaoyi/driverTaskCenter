@@ -932,11 +932,14 @@
               {{ userTaskStatusLabel(partRow(partDrawer.data).userTaskStatus) }}
             </el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="完单进度">
+          <el-descriptions-item
+            v-if="partRow(partDrawer.data).taskType === 'finish_order'"
+            label="完单进度"
+          >
             {{ partRow(partDrawer.data).completedOrderCount }} / {{ partRow(partDrawer.data).targetOrderCount }}
           </el-descriptions-item>
           <el-descriptions-item
-            v-if="partRow(partDrawer.data).hasDriverMetric"
+            v-if="partRow(partDrawer.data).taskType === 'finish_order' && partRow(partDrawer.data).hasDriverMetric"
             label="司机指标"
           >
             <span :style="{
