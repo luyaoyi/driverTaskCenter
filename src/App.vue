@@ -722,7 +722,6 @@
         <div class="form-section">
           <div class="form-section-title">
             奖励配置
-            <span class="sub-desc">至少配置一种奖励（可多选）</span>
           </div>
           <el-form
             :model="cfgForm"
