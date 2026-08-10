@@ -804,6 +804,39 @@
                 <el-radio value="newbie_task">新手任务</el-radio>
               </el-radio-group>
             </el-form-item>
+            <template v-if="cfgForm.taskTag === 'newbie_task'">
+              <el-form-item label="新手任务icon">
+                <el-upload
+                  v-model:file-list="newbieTaskIconFileList"
+                  action=""
+                  list-type="picture-card"
+                  :auto-upload="false"
+                  :limit="1"
+                  :multiple="false"
+                  accept="image/*"
+                  :on-change="onNewbieTaskIconChange"
+                  :on-remove="onNewbieTaskIconRemove"
+                  :on-exceed="onNewbieTaskIconExceed"
+                >
+                  <el-icon><Plus /></el-icon>
+                </el-upload>
+                <div style="color:#8a8f98;font-size:12px;margin-top:4px">选填；仅允许上传一张图片，建议尺寸 120×120，JPG/PNG 格式</div>
+              </el-form-item>
+              <el-form-item label="新手任务标题">
+                <el-input
+                  v-model="cfgForm.newbieTaskTitle"
+                  placeholder="新手任务专区展示的标题（选填）"
+                  maxlength="40" show-word-limit
+                />
+              </el-form-item>
+              <el-form-item label="新手任务副标题">
+                <el-input
+                  v-model="cfgForm.newbieTaskSubtitle"
+                  placeholder="新手任务专区展示的副标题（选填）"
+                  maxlength="60" show-word-limit
+                />
+              </el-form-item>
+            </template>
             <el-form-item label="展示顺序" required>
               <el-input-number
                 v-model="cfgForm.displayOrder"
@@ -1074,6 +1107,9 @@ interface TaskCfgRow {
   taskBadge: string
   homeButtonGuide: string
   taskTag: '' | 'newbie_task'
+  newbieTaskIcon: string
+  newbieTaskTitle: string
+  newbieTaskSubtitle: string
   displayOrder: number
   createTime: string
 }
@@ -1219,6 +1255,7 @@ const cfgTable = ref<TaskCfgRow[]>([
     taskBadge: '限时', taskTag: '',
     displayOrder: 10,
     homeButtonGuide: '去完成',
+    newbieTaskIcon: '', newbieTaskTitle: '', newbieTaskSubtitle: '',
     createTime: '2026-07-01 10:23:45',
   },
   {
@@ -1250,6 +1287,9 @@ const cfgTable = ref<TaskCfgRow[]>([
     taskBadge: '新人专享', taskTag: 'newbie_task',
     displayOrder: 20,
     homeButtonGuide: '立即领取',
+    newbieTaskIcon: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=%E7%BB%BF%E8%89%B2%E6%96%B0%E8%8A%BD%E5%B9%BC%E8%8B%97%E5%9B%BE%E6%A0%87%20%E6%96%B0%E6%89%8B%E4%BB%BB%E5%8A%A1%E4%B8%93%E5%8C%BA%20%E7%AE%80%E7%BA%A6%E6%89%81%E5%B9%B3%E7%99%BD%E5%BA%95&image_size=square_hd',
+    newbieTaskTitle: '新人专享福利',
+    newbieTaskSubtitle: '首单即享现金奖励',
     createTime: '2026-07-02 14:11:02',
   },
   {
@@ -1281,6 +1321,7 @@ const cfgTable = ref<TaskCfgRow[]>([
     taskBadge: '每日必做', taskTag: '',
     displayOrder: 30,
     homeButtonGuide: '去完成',
+    newbieTaskIcon: '', newbieTaskTitle: '', newbieTaskSubtitle: '',
     createTime: '2026-07-08 09:40:11',
   },
   {
@@ -1313,6 +1354,7 @@ const cfgTable = ref<TaskCfgRow[]>([
     taskBadge: '回归专属', taskTag: '',
     displayOrder: 40,
     homeButtonGuide: '马上参与',
+    newbieTaskIcon: '', newbieTaskTitle: '', newbieTaskSubtitle: '',
     createTime: '2026-07-08 16:05:20',
   },
   {
@@ -1344,6 +1386,7 @@ const cfgTable = ref<TaskCfgRow[]>([
     taskBadge: '', taskTag: '',
     displayOrder: 50,
     homeButtonGuide: '去完成',
+    newbieTaskIcon: '', newbieTaskTitle: '', newbieTaskSubtitle: '',
     createTime: '2026-06-15 11:30:00',
   },
   {
@@ -1374,6 +1417,7 @@ const cfgTable = ref<TaskCfgRow[]>([
     taskBadge: '专属荣誉', taskTag: '',
     displayOrder: 60,
     homeButtonGuide: '查看详情',
+    newbieTaskIcon: '', newbieTaskTitle: '', newbieTaskSubtitle: '',
     createTime: '2026-07-05 08:20:15',
   },
   {
@@ -1404,6 +1448,7 @@ const cfgTable = ref<TaskCfgRow[]>([
     taskBadge: '每日基础', taskTag: '',
     displayOrder: 70,
     homeButtonGuide: '去完成',
+    newbieTaskIcon: '', newbieTaskTitle: '', newbieTaskSubtitle: '',
     createTime: '2026-07-09 20:00:00',
   },
   {
@@ -1435,6 +1480,7 @@ const cfgTable = ref<TaskCfgRow[]>([
     taskBadge: '专属激活', taskTag: '',
     displayOrder: 80,
     homeButtonGuide: '马上参与',
+    newbieTaskIcon: '', newbieTaskTitle: '', newbieTaskSubtitle: '',
     createTime: '2026-07-10 09:30:00',
   },
 ])
@@ -1502,6 +1548,9 @@ interface CfgForm {
   taskBadge: string
   homeButtonGuide: string
   taskTag: '' | 'newbie_task'
+  newbieTaskIcon: string
+  newbieTaskTitle: string
+  newbieTaskSubtitle: string
   displayOrder: number
 }
 const cfgForm = reactive<CfgForm>({
@@ -1526,6 +1575,7 @@ const cfgForm = reactive<CfgForm>({
   taskIcon: '', taskBadge: '',
   homeButtonGuide: '',
   taskTag: '',
+  newbieTaskIcon: '', newbieTaskTitle: '', newbieTaskSubtitle: '',
   displayOrder: 50,
 })
 
@@ -1552,9 +1602,11 @@ function resetCfgForm() {
     taskIcon: '', taskBadge: '',
     homeButtonGuide: '',
     taskTag: '',
+    newbieTaskIcon: '', newbieTaskTitle: '', newbieTaskSubtitle: '',
     displayOrder: 50,
   } as CfgForm)
   taskIconFileList.value = []
+  newbieTaskIconFileList.value = []
 }
 function fillCfgFormFromRow(row: TaskCfgRow) {
   Object.assign(cfgForm, {
@@ -1599,12 +1651,20 @@ function fillCfgFormFromRow(row: TaskCfgRow) {
     taskBadge: row.taskBadge,
     homeButtonGuide: row.homeButtonGuide,
     taskTag: row.taskTag,
+    newbieTaskIcon: row.newbieTaskIcon,
+    newbieTaskTitle: row.newbieTaskTitle,
+    newbieTaskSubtitle: row.newbieTaskSubtitle,
     displayOrder: row.displayOrder,
   } as CfgForm)
   if (row.taskIcon) {
     taskIconFileList.value = [{ name: 'taskIcon.png', url: row.taskIcon } as any]
   } else {
     taskIconFileList.value = []
+  }
+  if (row.newbieTaskIcon) {
+    newbieTaskIconFileList.value = [{ name: 'newbieTaskIcon.png', url: row.newbieTaskIcon } as any]
+  } else {
+    newbieTaskIconFileList.value = []
   }
 }
 
@@ -1692,6 +1752,9 @@ function makeCfgRowFromForm(): TaskCfgRow {
     taskBadge: cfgForm.taskBadge,
     homeButtonGuide: cfgForm.homeButtonGuide,
     taskTag: cfgForm.taskTag,
+    newbieTaskIcon: cfgForm.newbieTaskIcon,
+    newbieTaskTitle: cfgForm.newbieTaskTitle,
+    newbieTaskSubtitle: cfgForm.newbieTaskSubtitle,
     displayOrder: cfgForm.displayOrder,
     createTime: now.toISOString().slice(0, 19).replace('T', ' '),
   }
@@ -1810,6 +1873,31 @@ function onTaskIconRemove() {
 }
 function onTaskIconExceed() {
   ElMessage.warning('任务 icon 仅允许上传一张图片，请先移除现有图片')
+}
+
+const newbieTaskIconFileList = ref<any[]>([])
+function onNewbieTaskIconChange(uploadFile: any) {
+  if (uploadFile && uploadFile.raw) {
+    if (cfgForm.newbieTaskIcon && cfgForm.newbieTaskIcon.startsWith('blob:')) {
+      try { URL.revokeObjectURL(cfgForm.newbieTaskIcon) } catch {}
+    }
+    cfgForm.newbieTaskIcon = URL.createObjectURL(uploadFile.raw)
+    newbieTaskIconFileList.value = [{
+      name: uploadFile.name || 'newbie-task-icon',
+      url: cfgForm.newbieTaskIcon,
+      raw: uploadFile.raw,
+    }]
+  }
+}
+function onNewbieTaskIconRemove() {
+  if (cfgForm.newbieTaskIcon && cfgForm.newbieTaskIcon.startsWith('blob:')) {
+    try { URL.revokeObjectURL(cfgForm.newbieTaskIcon) } catch {}
+  }
+  cfgForm.newbieTaskIcon = ''
+  newbieTaskIconFileList.value = []
+}
+function onNewbieTaskIconExceed() {
+  ElMessage.warning('新手任务 icon 仅允许上传一张图片，请先移除现有图片')
 }
 
 /* ====================================================== */
