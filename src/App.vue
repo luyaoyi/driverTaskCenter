@@ -829,6 +829,14 @@
                 maxlength="10" show-word-limit
               />
             </el-form-item>
+            <el-form-item label="首页按钮引导标签">
+              <el-input
+                v-model="cfgForm.homeButtonGuide"
+                placeholder="如：去完成、立即领取、马上参与（选填）"
+                maxlength="6" show-word-limit
+              />
+              <div style="color:#8a8f98;font-size:12px;margin-top:4px">司机端首页任务入口按钮上展示的引导文案，选填，最多 6 个字</div>
+            </el-form-item>
             <el-form-item label="任务副标题">
               <el-input
                 v-model="cfgForm.taskSubtitle"
@@ -1072,6 +1080,7 @@ interface TaskCfgRow {
   rewardDesc: string
   taskIcon: string
   taskBadge: string
+  homeButtonGuide: string
   taskTag: '' | 'newbie_task'
   displayOrder: number
   createTime: string
@@ -1217,6 +1226,7 @@ const cfgTable = ref<TaskCfgRow[]>([
     taskIcon: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=%E7%BA%A2%E8%89%B2%E7%8E%B0%E9%87%91%E7%BA%A2%E5%8C%85%E9%87%91%E5%B8%81%E5%9B%BE%E6%A0%87%20%E7%BD%91%E7%BA%A6%E8%BD%A6%E5%8F%B8%E6%9C%BA%E4%BB%BB%E5%8A%A1%E5%A5%96%E5%8A%B1%20%E7%AE%80%E7%BA%A6%E6%89%81%E5%B9%B3%E9%A3%8E%E6%A0%BC&image_size=square_hd',
     taskBadge: '限时', taskTag: '',
     displayOrder: 10,
+    homeButtonGuide: '去完成',
     createTime: '2026-07-01 10:23:45',
   },
   {
@@ -1247,6 +1257,7 @@ const cfgTable = ref<TaskCfgRow[]>([
     taskIcon: '',
     taskBadge: '新人专享', taskTag: 'newbie_task',
     displayOrder: 20,
+    homeButtonGuide: '立即领取',
     createTime: '2026-07-02 14:11:02',
   },
   {
@@ -1277,6 +1288,7 @@ const cfgTable = ref<TaskCfgRow[]>([
     taskIcon: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=%E7%BB%BF%E8%89%B2%E6%B1%BD%E8%BD%A6%E8%BD%A6%E9%80%9F%E8%A1%A8%E7%AE%AD%E5%A4%B4%E5%90%91%E4%B8%8A%20%E6%8E%A5%E5%8D%95%E7%8E%87%E6%8F%90%E5%8D%87%E5%9B%BE%E6%A0%87%20%E7%AE%80%E7%BA%A6%E6%89%81%E5%B9%B3%E7%99%BD%E5%BA%95&image_size=square_hd',
     taskBadge: '每日必做', taskTag: '',
     displayOrder: 30,
+    homeButtonGuide: '去完成',
     createTime: '2026-07-08 09:40:11',
   },
   {
@@ -1308,6 +1320,7 @@ const cfgTable = ref<TaskCfgRow[]>([
     taskIcon: '',
     taskBadge: '回归专属', taskTag: '',
     displayOrder: 40,
+    homeButtonGuide: '马上参与',
     createTime: '2026-07-08 16:05:20',
   },
   {
@@ -1338,6 +1351,7 @@ const cfgTable = ref<TaskCfgRow[]>([
     taskIcon: '',
     taskBadge: '', taskTag: '',
     displayOrder: 50,
+    homeButtonGuide: '去完成',
     createTime: '2026-06-15 11:30:00',
   },
   {
@@ -1367,6 +1381,7 @@ const cfgTable = ref<TaskCfgRow[]>([
     taskIcon: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=%E9%87%91%E8%89%B2%E4%BA%94%E8%A7%92%E6%98%9F%E5%A5%96%E7%AB%A0%E4%B8%9D%E5%B8%A6%20%E6%9C%8D%E5%8A%A1%E4%B9%8B%E6%98%9F%E8%8D%A3%E8%AA%89%E5%9B%BE%E6%A0%87%20%E7%AE%80%E7%BA%A6%E6%89%81%E5%B9%B3%E7%99%BD%E5%BA%95&image_size=square_hd',
     taskBadge: '专属荣誉', taskTag: '',
     displayOrder: 60,
+    homeButtonGuide: '查看详情',
     createTime: '2026-07-05 08:20:15',
   },
   {
@@ -1396,6 +1411,7 @@ const cfgTable = ref<TaskCfgRow[]>([
     taskIcon: '',
     taskBadge: '每日基础', taskTag: '',
     displayOrder: 70,
+    homeButtonGuide: '去完成',
     createTime: '2026-07-09 20:00:00',
   },
   {
@@ -1426,6 +1442,7 @@ const cfgTable = ref<TaskCfgRow[]>([
     taskIcon: '',
     taskBadge: '专属激活', taskTag: '',
     displayOrder: 80,
+    homeButtonGuide: '马上参与',
     createTime: '2026-07-10 09:30:00',
   },
 ])
@@ -1491,6 +1508,7 @@ interface CfgForm {
   rewardDesc: string
   taskIcon: string
   taskBadge: string
+  homeButtonGuide: string
   taskTag: '' | 'newbie_task'
   displayOrder: number
 }
@@ -1514,6 +1532,7 @@ const cfgForm = reactive<CfgForm>({
   cashCode: '',
   taskTitle: '', taskSubtitle: '', taskDesc: '', rewardDesc: '',
   taskIcon: '', taskBadge: '',
+  homeButtonGuide: '',
   taskTag: '',
   displayOrder: 50,
 })
@@ -1539,6 +1558,7 @@ function resetCfgForm() {
     cashCode: '',
     taskTitle: '', taskSubtitle: '', taskDesc: '', rewardDesc: '',
     taskIcon: '', taskBadge: '',
+    homeButtonGuide: '',
     taskTag: '',
     displayOrder: 50,
   } as CfgForm)
@@ -1585,6 +1605,7 @@ function fillCfgFormFromRow(row: TaskCfgRow) {
     rewardDesc: row.rewardDesc,
     taskIcon: row.taskIcon,
     taskBadge: row.taskBadge,
+    homeButtonGuide: row.homeButtonGuide,
     taskTag: row.taskTag,
     displayOrder: row.displayOrder,
   } as CfgForm)
@@ -1677,6 +1698,7 @@ function makeCfgRowFromForm(): TaskCfgRow {
     rewardDesc: cfgForm.rewardDesc,
     taskIcon: cfgForm.taskIcon,
     taskBadge: cfgForm.taskBadge,
+    homeButtonGuide: cfgForm.homeButtonGuide,
     taskTag: cfgForm.taskTag,
     displayOrder: cfgForm.displayOrder,
     createTime: now.toISOString().slice(0, 19).replace('T', ' '),
