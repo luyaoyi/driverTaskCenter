@@ -311,14 +311,6 @@
                   </el-tag>
                 </template>
               </el-table-column>
-              <el-table-column label="任务标签" width="100">
-                <template #default="{ row }">
-                  <el-tag
-                    v-if="taskCfgRow(row).taskTag === 'newbie_task'"
-                    type="warning" effect="light" size="small">新手任务</el-tag>
-                  <span v-else style="color:#c0c4cc">-</span>
-                </template>
-              </el-table-column>
               <el-table-column prop="createTime" label="更新时间" width="170" />
               <el-table-column label="操作" width="360" fixed="right">
                 <template #default="{ row }">
